@@ -1,114 +1,169 @@
 import os
 import time
-import random
+import logging
+from typing import List, Dict, Tuple, Optional
 
 # ==========================================
-# 1. 定义数据结构 (Data Structures)
+# 0. 全局配置与日志 (Global Config)
 # ==========================================
-# 为了防止大家数据格式打架，我们约定一下：
-# 和弦标签就是一个简单的字符串列表，例如: ['C_Maj', 'G_Dom7', 'A_Min']
+# 调试开关：True = 使用假数据测试 UI；False = 调用真实 AI/逻辑代码
+# 【关键】Day 1-7 设为 True，Day 8 联调时改为 False
+USE_MOCK_MODELS = True 
+
+# 配置日志输出，看起来更专业
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - [Group %(name)s] - %(message)s'
+)
+
+# 定义允许的风格（B组要把这些实现了）,根据你的喜好改动，记得保证全文件名字统一
+# 题外话，我们这次用的Nottingham Music Database都是英美民谣，风格加上去有概率变奇怪。
+VALID_STYLES = ["Pop Ballad", "Waltz", "March", "Jazz"]
 
 # ==========================================
-# 2. 给 Group A (模型组) 的接口规范
+# 1. Group A: AI 预测接口
 # ==========================================
-def predict_chords_from_melody(midi_path):
+def predict_chords(melody_midi_path: str) -> List[str]:
     """
-    [Group A 负责实现]
-    输入: 用户上传的 MIDI 文件路径
-    输出: 一个预测好的和弦标签列表 (List of Strings)
+    [Group A 核心任务]
+    输入一段单音旋律 MIDI，预测对应的和弦标签序列。
+    
+    Args:
+        melody_midi_path (str): 用户上传的 MIDI 文件路径。
+        
+    Returns:
+        List[str]: 和弦标签列表，例如 ['C_Maj', 'A_Min', ...]。
     """
-    print(f"Running AI Model on {midi_path}...")
+    logger = logging.getLogger("A")
+    logger.info(f"正在分析旋律文件: {melody_midi_path}")
+
+    if USE_MOCK_MODELS:
+        # --- 模拟模式 (Mock Mode) ---
+        time.sleep(1.5) # 假装 AI 在思考
+        logger.info("模拟预测完成")
+        return ["C_Maj", "G_Maj", "A_Min", "E_Min", "F_Maj", "C_Maj", "F_Maj", "G_Dom7"]
     
-    # --- TODO: A组在这里加载模型，读取MIDI，返回预测结果 ---
-    # 目前是 Mock (假数据)，为了让 UI 能跑通
-    # 模拟 AI 思考了 1 秒
-    time.sleep(1) 
-    
-    # 假装这是 AI 预测出来的 8 个小节的和弦
-    mock_prediction = ["C_Maj", "G_Maj", "A_Min", "F_Maj", 
-                       "C_Maj", "F_Maj", "G_Dom7", "C_Maj"]
-    return mock_prediction
+    else:
+        # --- 真实模式 (Real Mode) ---
+        # TODO: A组在这里填入真实代码
+        # 1. import src.predict
+        # 2. model = load_model(...)
+        # 3. result = model.predict(melody_midi_path)
+        # return result
+        raise NotImplementedError("A组的真实模型尚未接入！请将 USE_MOCK_MODELS 设为 True")
 
 # ==========================================
-# 3. 给 Group B (逻辑组) 的接口规范
+# 2. Group B: 逻辑生成接口
 # ==========================================
-def generate_music_file(chord_sequence, style, output_path):
+def render_accompaniment(
+    original_midi_path: str, 
+    chord_sequence: List[str], 
+    style: str, 
+    output_midi_path: str
+) -> str:
     """
-    [Group B 负责实现]
-    输入: 
-        1. chord_sequence: A组预测出来的和弦列表
-        2. style: 用户在 UI 上选的风格 (例如 'Pop', 'Waltz')
-        3. output_path: 生成文件的保存路径
-    输出: 
-        成功生成的 MIDI 文件路径 (String)
+    [Group B 核心任务]
+    根据和弦标签和风格，生成左手伴奏，并与右手旋律合并。
+    
+    Args:
+        original_midi_path (str): 原始旋律文件（用于提取右手）。
+        chord_sequence (List[str]): A组预测出的和弦列表。
+        style (str): 用户选择的风格（必须在 VALID_STYLES 中）。
+        output_midi_path (str): 结果保存的路径。
+        
+    Returns:
+        str: 生成的 MIDI 文件路径 (成功时返回 output_midi_path)。
     """
-    print(f"Generating music with Style: {style}...")
+    logger = logging.getLogger("B")
     
-    # --- TODO: B组在这里调用 music21，根据和弦生成音符，导出文件 ---
-    # 目前是 Mock (假数据)
-    
-    # 这一步本来应该生成文件，现在我们先假设文件已经生成了
-    # 实际开发时，B组要保证 output_path 真的产生了一个 .mid 文件
-    if not os.path.exists(output_path):
-        # 创建一个空文件骗过 UI，防止报错
-        with open(output_path, 'w') as f:
-            f.write("This is a dummy MIDI file.")
-            
-    return output_path
+    if style not in VALID_STYLES:
+        logger.warning(f"风格 '{style}' 未定义，回退到默认风格")
+        style = VALID_STYLES[0]
 
-def generate_sheet_music(midi_path):
+    logger.info(f"正在渲染伴奏... 风格: {style}, 和弦数: {len(chord_sequence)}")
+
+    if USE_MOCK_MODELS:
+        # --- 模拟模式 ---
+        time.sleep(2) # 假装在合成
+        # 创建一个空文件占位，防止报错
+        with open(output_midi_path, 'w') as f:
+            f.write("Dummy MIDI content")
+        logger.info(f"生成完毕: {output_midi_path}")
+        return output_midi_path
+    
+    else:
+        # --- 真实模式 ---
+        # TODO: B组在这里填入真实代码
+        # 1. right_hand = music21.converter.parse(original_midi_path)
+        # 2. left_hand = generate_notes(chord_sequence, style)
+        # 3. combined = right_hand + left_hand
+        # 4. combined.write('midi', fp=output_midi_path)
+        # return output_midi_path
+        raise NotImplementedError("B组的生成逻辑尚未接入！")
+
+def generate_score_pdf(midi_path: str) -> str:
     """
-    [Group B 负责实现]
-    输入: 生成好的 MIDI 路径
-    输出: 对应的 PDF 或 PNG 乐谱路径
+    [Group B 额外任务] 将 MIDI 转为 PDF 乐谱 (可选，若太难可只返回图片路径)
     """
-    # --- TODO: B组调用 music21 的 write('musicxml.pdf') ---
-    return "assets/sample_sheet.png" # 返回一个假图片的路径用于测试
+    if USE_MOCK_MODELS:
+        return "assets/mock_score.png" # UI组需要自己放一张假图片在这里
+    else:
+        # 真实转换逻辑
+        return midi_path.replace(".mid", ".pdf")
 
 # ==========================================
-# 4. 给 Group C (UI组) 的调用入口
+# 3. Group C: 主控流水线 (Pipeline)
 # ==========================================
-def run_pipeline(user_uploaded_file, selected_style):
+def run_music_gen_pipeline(uploaded_file_path: str, selected_style: str) -> Dict:
     """
-    [Group C 调用这个函数]
-    这是主流程函数，它把 A组 和 B组 的工作串联起来。
+    [Group C 调用入口]
+    串联 A组 和 B组 的工作，处理异常。
     """
+    logger = logging.getLogger("C")
+    logger.info(">>> 开始处理用户请求 <<<")
     
-    # 1. 定义输出文件名
+    # 定义输出路径 (保存在 samples 文件夹)
+    os.makedirs("samples", exist_ok=True)
     timestamp = int(time.time())
-    output_midi = f"output_{timestamp}.mid"
-    
+    final_midi_path = os.path.join("samples", f"gen_{timestamp}.mid")
+
     try:
-        # Step 1: 调用 A组 (AI 预测)
-        chords = predict_chords_from_melody(user_uploaded_file)
+        # Step 1: AI 预测
+        chords = predict_chords(uploaded_file_path)
         
-        # Step 2: 调用 B组 (生成 MIDI)
-        final_midi_path = generate_music_file(chords, selected_style, output_midi)
+        # Step 2: 生成伴奏
+        output_file = render_accompaniment(
+            original_midi_path=uploaded_file_path,
+            chord_sequence=chords,
+            style=selected_style,
+            output_midi_path=final_midi_path
+        )
         
-        # Step 3: 调用 B组 (生成乐谱)
-        sheet_music_path = generate_sheet_music(final_midi_path)
-        
+        # Step 3: 生成乐谱预览 (可选)
+        pdf_file = generate_score_pdf(output_file)
+
+        logger.info(">>> 流程成功结束 <<<")
         return {
             "success": True,
-            "midi_path": final_midi_path,
-            "pdf_path": sheet_music_path,
-            "chords": chords, # 把和弦也返回给 UI，可以显示在界面上，很酷
-            "message": "生成成功！"
+            "midi_file": output_file,
+            "pdf_file": pdf_file,
+            "chord_labels": chords, # 用于在前端展示给老师看
+            "message": "生成成功"
         }
-        
+
     except Exception as e:
+        logger.error(f"处理失败: {str(e)}")
         return {
             "success": False,
             "error": str(e),
-            "message": "生成失败，请检查日志。"
+            "message": "系统内部错误，请检查日志"
         }
 
 # ==========================================
-# 测试代码 (直接运行这个文件看看通不通)
+# 4. 自测入口 (Self-Check)
 # ==========================================
 if __name__ == "__main__":
-    # 模拟 UI 组的调用
-    print("--- 测试开始 ---")
-    result = run_pipeline("test_input.mid", "Waltz")
-    print("返回结果:", result)
-    print("--- 测试结束 ---")
+    # 在终端直接运行 python interface.py 即可测试流程是否通畅
+    print("--- 接口自测模式 ---")
+    test_result = run_music_gen_pipeline("test_melody.mid", "Waltz")
+    print(f"执行结果: {test_result}")
