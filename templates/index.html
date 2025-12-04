@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MELODY AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-start: #0b1020;
+        --bg-end: #171733;
+        --teal: #3cf2d4;
+        --blue: #4cc3ff;
+        --purple: #bc42ff;
+        --glass: rgba(18, 22, 35, 0.6);
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #cfe6ff;
+        background: radial-gradient(1200px 800px at 20% 10%, #0a1224 0%, var(--bg-start) 40%, var(--bg-end) 100%);
+        overflow: hidden;
+        cursor: none;
+      }
+      .stage {
+        position: relative;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        padding: 6vh 6vw;
+      }
+      .title {
+        align-self: center;
+        justify-self: center;
+        text-align: center;
+        z-index: 2;
+        max-width: 1200px;
+        transform: translateY(-8vh);
+      }
+      .title h1 {
+        margin: 0 0 16px 0;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        font-size: clamp(40px, 6.4vw, 96px);
+        line-height: 1.05;
+        background: linear-gradient(90deg, var(--teal), var(--blue) 40%, var(--purple));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 6px 18px rgba(76, 195, 255, 0.15));
+      }
+      .title p {
+        margin: 0;
+        font-size: clamp(16px, 2.2vw, 24px);
+        letter-spacing: 0.12em;
+        color: #92b6ff;
+        text-transform: uppercase;
+      }
+      .cta {
+        position: absolute;
+        top: 66vh;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+      }
+      .btn {
+        appearance: none;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 18px 40px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12));
+        color: #d5e9ff;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        font-size: clamp(14px, 1.6vw, 18px);
+        backdrop-filter: blur(8px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(188, 66, 255, 0.18);
+        position: relative;
+      }
+      .btn::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 18px;
+        padding: 2px;
+        background: linear-gradient(90deg, var(--teal), var(--blue), var(--purple));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+      }
+      .btn:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(76, 195, 255, 0.25); }
+      .btn:active { transform: translateY(0); }
+
+      .waves {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        opacity: 0.75;
+      }
+      svg.waves { width: 100%; height: 100%; }
+      .cursorNote {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: 28px;
+        height: 28px;
+        pointer-events: none;
+        z-index: 2;
+        transform: translate(-50%, -50%) rotate(-12deg);
+        filter: drop-shadow(0 0 12px rgba(76,195,255,0.85)) drop-shadow(0 0 24px rgba(76,195,255,0.55)) drop-shadow(0 0 48px rgba(76,195,255,0.35));
+        mix-blend-mode: normal;
+        overflow: visible;
+      }
+      @media (max-width: 640px) {
+        .stage { padding: 7vh 5vw; }
+        .title { transform: translateY(-4vh); }
+        .cta { top: 68vh; }
+        .btn { padding: 16px 28px; border-radius: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <section class="title">
+        <h1>MELODY AI</h1>
+        <p>AI-POWERED MELODY GENERATION</p>
+      </section>
+      <section class="cta">
+        <button id="start" class="btn">LET'S GO</button>
+      </section>
+
+      <svg class="waves" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+        <defs id="grads"></defs>
+        <g id="waveGroup" fill="none" stroke-width="1.6" opacity="0.75" stroke-linecap="round"></g>
+      </svg>
+      
+    </main>
+
+    <script>
+      const start = document.getElementById('start');
+      start.addEventListener('click', () => {
+        window.location.href = '/input';
+      });
+
+      const svg = document.querySelector('svg.waves');
+      const group = svg.querySelector('#waveGroup');
+      const defs = svg.querySelector('#grads');
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const width = 1000;
+      const lines = 12;
+      const spacing = 72;
+      const baseY = 140;
+      const paths = [];
+      for (let i = 0; i < lines; i++) {
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const grad = document.createElementNS(svgNS, 'linearGradient');
+        grad.setAttribute('id', `grad${i}`);
+        grad.setAttribute('x1', '0%');
+        grad.setAttribute('y1', '0%');
+        grad.setAttribute('x2', '100%');
+        grad.setAttribute('y2', '0%');
+        const colors = [
+          `hsl(${190 + i * 5}, 100%, 62%)`,
+          `hsl(${220 + i * 5}, 100%, 60%)`,
+          `hsl(${260 + i * 5}, 100%, 62%)`,
+          `hsl(${300 + i * 5}, 100%, 66%)`
+        ];
+        const offsets = ['0%', '35%', '70%', '100%'];
+        for (let s = 0; s < colors.length; s++) {
+          const stop = document.createElementNS(svgNS, 'stop');
+          stop.setAttribute('offset', offsets[s]);
+          stop.setAttribute('stop-color', colors[s]);
+          grad.appendChild(stop);
+        }
+        defs.appendChild(grad);
+        p.setAttribute('stroke', `url(#grad${i})`);
+        group.appendChild(p);
+        paths.push(p);
+      }
+      function buildPath(y0, amp, phase, freq, segs, arcAmp, arcFreq, arcRise, fanSlope, lineFactor) {
+        const step = width / segs;
+        const u0 = -1;
+        const arc0 = arcAmp * Math.sqrt(Math.max(0, 1 - u0 * u0));
+        const rise0 = arcRise * Math.pow(0, 1.2);
+        const fan0 = fanSlope * lineFactor * (-0.5);
+        let d = `M0,${y0 + arc0 - rise0 + fan0 + amp * Math.sin(phase)}`;
+        for (let x = step; x <= width; x += step) {
+          const t = x / width;
+          const u = 2 * t - 1;
+          const arc = arcAmp * Math.sqrt(Math.max(0, 1 - u * u));
+          const rise = arcRise * Math.pow(t, 1.2);
+          const fan = fanSlope * lineFactor * (t - 0.5);
+          const phi = t * freq + phase;
+          const y = y0 + arc - rise + fan + amp * Math.sin(phi);
+          d += ` L${x},${y}`;
+        }
+        return d;
+      }
+      let t = 0;
+      function animate() {
+        t += 0.010;
+        const ampWanted = spacing * 1.10 + spacing * 0.18 * Math.sin(t * 0.20);
+        const amp = Math.min(spacing * 0.55, ampWanted);
+        const arcAmp = 0;
+        const arcFreq = 0;
+        const arcRise = 0;
+        const mid = (lines - 1) / 2;
+        const fanSlope = 0;
+        for (let i = 0; i < lines; i++) {
+          const y0 = baseY + i * spacing;
+          const phase = t * 0.32;
+          const freq = Math.PI * 6;
+          const lineFactor = (i - mid) / mid;
+          const ampLine = amp * (0.95 - 0.10 * Math.abs(lineFactor));
+          paths[i].setAttribute('d', buildPath(y0, ampLine, phase, freq, 160, arcAmp, arcFreq, arcRise, fanSlope, lineFactor));
+          const ow = (1.4 + 0.6 * (1 - Math.abs(lineFactor))).toFixed(2);
+          paths[i].setAttribute('stroke-width', ow);
+          const op = (0.46 + 0.15 * (1 - Math.abs(lineFactor))).toFixed(2);
+          paths[i].setAttribute('opacity', op);
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      const cursorNote = document.createElement('div');
+      cursorNote.className = 'cursorNote';
+      document.body.appendChild(cursorNote);
+      const noteSvg = document.createElementNS(svgNS, 'svg');
+      noteSvg.setAttribute('viewBox', '-24 -36 96 192');
+      noteSvg.setAttribute('width', '32');
+      noteSvg.setAttribute('height', '32');
+      noteSvg.style.overflow = 'visible';
+      const noteText = document.createElementNS(svgNS, 'text');
+      noteText.setAttribute('x', '24');
+      noteText.setAttribute('y', '48');
+      noteText.setAttribute('text-anchor', 'middle');
+      noteText.setAttribute('dominant-baseline', 'middle');
+      noteText.setAttribute('font-family', '"Noto Music", serif');
+      noteText.setAttribute('font-size', '96');
+      noteText.setAttribute('paint-order', 'stroke fill');
+      noteText.textContent = '\uD834\uDD1E';
+      noteSvg.appendChild(noteText);
+      cursorNote.appendChild(noteSvg);
+
+
+
+      let cx = innerWidth / 2, cy = innerHeight / 2;
+      let tx = cx, ty = cy;
+      let prevX = tx, prevY = ty, prevTime = performance.now();
+      let speedScale = 0; // 0..1
+
+
+
+      function mix(a, b, t) { return [
+        Math.round(a[0] * (1 - t) + b[0] * t),
+        Math.round(a[1] * (1 - t) + b[1] * t),
+        Math.round(a[2] * (1 - t) + b[2] * t)
+      ]; }
+
+      function track() {
+        const now = performance.now();
+        const dt = Math.max(16, now - prevTime);
+        const dx = tx - prevX; const dy = ty - prevY;
+        const v = Math.sqrt(dx * dx + dy * dy) / dt; // px/ms
+        speedScale = Math.min(1, v * 2); // scale up for sensitivity
+        prevX = tx; prevY = ty; prevTime = now;
+
+        cx += (tx - cx) * 0.22;
+        cy += (ty - cy) * 0.22;
+        cursorNote.style.left = cx + 'px';
+        cursorNote.style.top = cy + 'px';
+
+        const btnRect = start.getBoundingClientRect();
+        const bcx = btnRect.left + btnRect.width / 2;
+        const bcy = btnRect.top + btnRect.height / 2;
+        const dist = Math.hypot(tx - bcx, ty - bcy);
+        const bias = Math.max(0, 1 - dist / 240);
+        const blue = [76, 195, 255];
+        const purple = [116, 92, 255];
+        const col = [
+          Math.round(blue[0] * (1 - bias) + purple[0] * bias),
+          Math.round(blue[1] * (1 - bias) + purple[1] * bias),
+          Math.round(blue[2] * (1 - bias) + purple[2] * bias)
+        ];
+        const a = Math.min(1, 0.90 + 0.20 * speedScale);
+        const size = 28;
+        noteSvg.setAttribute('width', String(size));
+        noteSvg.setAttribute('height', String(size));
+        noteText.setAttribute('fill', `rgb(${col[0]},${col[1]},${col[2]})`);
+        noteText.setAttribute('stroke', `rgb(${col[0]},${col[1]},${col[2]})`);
+        noteText.setAttribute('stroke-width', '2');
+
+        requestAnimationFrame(track);
+      }
+      window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; });
+      track();
+
+
+    </script>
+  </body>
+</html>

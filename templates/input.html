@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MELODY AI · Accompaniment Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --bg-start: #0b1020;
+        --bg-end: #171733;
+        --teal: #3cf2d4;
+        --blue: #4cc3ff;
+        --purple: #bc42ff;
+        --glass: rgba(18, 22, 35, 0.8);
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: #d6e7ff;
+        background: radial-gradient(1200px 800px at 20% 10%, #0a1224 0%, var(--bg-start) 40%, var(--bg-end) 100%);
+      }
+
+      .layout {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 32px clamp(20px, 5vw, 60px);
+        gap: 24px;
+      }
+
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .brand-title {
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        font-size: 20px;
+        text-transform: uppercase;
+        background: linear-gradient(90deg, var(--teal), var(--blue), var(--purple));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .brand-sub {
+        font-size: 12px;
+        color: #9fb6ff;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .back-link {
+        font-size: 13px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 176, 255, 0.3);
+        color: #c7d9ff;
+        text-decoration: none;
+        backdrop-filter: blur(8px);
+        background: rgba(10, 14, 30, 0.6);
+      }
+      .back-link:hover {
+        border-color: rgba(148, 176, 255, 0.7);
+      }
+
+      .main {
+        flex: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        gap: 24px;
+      }
+
+      @media (max-width: 900px) {
+        .main {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .card {
+        background: var(--glass);
+        border-radius: 24px;
+        padding: 24px 24px 20px;
+        border: 1px solid rgba(116, 149, 255, 0.28);
+        box-shadow:
+          0 18px 45px rgba(6, 12, 40, 0.9),
+          0 0 0 1px rgba(20, 34, 80, 0.6);
+        backdrop-filter: blur(14px);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .card-desc {
+        font-size: 13px;
+        color: #9fb6ff;
+      }
+
+      .badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(60, 242, 212, 0.5);
+        color: #bffaf0;
+        background: radial-gradient(circle at 0 0, rgba(60, 242, 212, 0.2), transparent 60%);
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+
+      label {
+        font-size: 13px;
+        color: #c8ddff;
+      }
+
+      input[type="file"],
+      select {
+        font-size: 13px;
+        padding: 9px 11px;
+        border-radius: 12px;
+        border: 1px solid rgba(122, 150, 255, 0.65);
+        background: rgba(7, 12, 32, 0.78);
+        color: #e3efff;
+      }
+
+      select {
+        cursor: pointer;
+      }
+
+      input[type="file"]::file-selector-button {
+        border: none;
+        border-radius: 9px;
+        padding: 6px 12px;
+        margin-right: 8px;
+        background: linear-gradient(135deg, var(--blue), var(--purple));
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .hint {
+        font-size: 12px;
+        color: #8aa1ff;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      button.primary {
+        border: none;
+        cursor: pointer;
+        padding: 10px 22px;
+        border-radius: 18px;
+        background: linear-gradient(120deg, var(--teal), var(--blue));
+        color: #021018;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        font-size: 12px;
+        text-transform: uppercase;
+        box-shadow:
+          0 10px 26px rgba(60, 242, 212, 0.25),
+          0 0 0 1px rgba(0, 0, 0, 0.5);
+      }
+
+      button.primary:disabled {
+        opacity: 0.55;
+        cursor: default;
+        box-shadow: none;
+      }
+
+      .status {
+        font-size: 13px;
+        color: #9fb6ff;
+      }
+
+      .status strong {
+        color: #e8f0ff;
+      }
+
+      .chord-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 6px 0 10px;
+      }
+
+      .chord-pill {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: rgba(16, 32, 80, 0.7);
+        border: 1px solid rgba(142, 168, 255, 0.8);
+      }
+
+      .output-block {
+        font-size: 13px;
+        color: #b7cbff;
+        margin-bottom: 12px;
+      }
+
+      .output-block a {
+        color: #88e3ff;
+      }
+
+      .player {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 16px;
+        background: rgba(2, 8, 26, 0.85);
+        border: 1px solid rgba(116, 149, 255, 0.3);
+      }
+
+      audio {
+        width: 100%;
+      }
+
+      .muted {
+        color: #7f92c4;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <header class="top-bar">
+        <div class="brand">
+          <div class="brand-title">MELODY AI</div>
+          <div class="brand-sub">AI ACCOMPANIMENT STUDIO</div>
+        </div>
+        <a class="back-link" href="/">← BACK TO LANDING</a>
+      </header>
+
+      <main class="main">
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Upload melody &amp; choose style</div>
+              <div class="card-desc">Upload a melody MIDI file and select an accompaniment style.</div>
+            </div>
+            <span class="badge">STEP 1 · INPUT</span>
+          </div>
+
+          <form id="uploadForm">
+            <div class="form-group">
+              <label for="file">Melody File (.mid / .midi)</label>
+              <input id="file" type="file" accept=".mid,.midi" required />
+              <div class="hint">Please upload a melody-only MIDI file.</div>
+            </div>
+
+            <div class="form-group">
+              <label for="style">Accompaniment Style</label>
+              <select id="style" required>
+              </select>
+              <div class="hint">The list is synced with back-end VALID_STYLES.</div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="primary" id="generateBtn">Generate</button>
+              <div class="status" id="statusText">
+                Ready. Choose a MIDI file and click <strong>Generate</strong>.
+              </div>
+            </div>
+          </form>
+        </section>
+
+        
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Result &amp; Preview</div>
+              <div class="card-desc">Inspect the predicted chords and download/play the generated MIDI.</div>
+            </div>
+            <span class="badge">STEP 2 · OUTPUT</span>
+          </div>
+
+          <div class="output-block">
+            <strong>Chord preview (first 10):</strong>
+            <div id="chordBox" class="chord-list">
+              <span class="muted">No result yet. Please generate first.</span>
+            </div>
+          </div>
+
+          <div class="output-block">
+            <strong>Generated MIDI:</strong>
+            <div id="fileBox">
+              <span class="muted">The download link and player will appear here after generation.</span>
+            </div>
+          </div>
+
+          <div class="player">
+            <audio id="audioPlayer" controls preload="none" style="display: none;"></audio>
+            <div class="muted">
+              Note: some browsers cannot play MIDI directly. If there is no sound, download the file and use a local player.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const styleSelect = document.getElementById("style");
+      const form = document.getElementById("uploadForm");
+      const statusText = document.getElementById("statusText");
+      const chordBox = document.getElementById("chordBox");
+      const fileBox = document.getElementById("fileBox");
+      const audioPlayer = document.getElementById("audioPlayer");
+      const generateBtn = document.getElementById("generateBtn");
+
+      // Load styles from back-end
+      async function loadStyles() {
+        try {
+          const res = await fetch("/api/styles");
+          const data = await res.json();
+          const styles = data.styles || ["Pop Ballad", "Waltz", "March", "Jazz Swing"];
+
+          styleSelect.innerHTML = "";
+          styles.forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            styleSelect.appendChild(opt);
+          });
+        } catch (e) {
+          // fallback
+          ["Pop Ballad", "Waltz", "March", "Jazz Swing"].forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            styleSelect.appendChild(opt);
+          });
+        }
+      }
+
+      loadStyles();
+
+      // Submit form → call /api/generate
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const fileInput = document.getElementById("file");
+        if (!fileInput.files.length) {
+          alert("Please choose a MIDI file first.");
+          return;
+        }
+
+        const file = fileInput.files[0];
+        const style = styleSelect.value;
+
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("style", style);
+
+        generateBtn.disabled = true;
+        statusText.textContent = "Generating accompaniment. Please wait...";
+        chordBox.innerHTML = '<span class="muted">Processing...</span>';
+        fileBox.innerHTML = '<span class="muted">Processing...</span>';
+        audioPlayer.style.display = "none";
+        audioPlayer.removeAttribute("src");
+
+        try {
+          const res = await fetch("/api/generate", {
+            method: "POST",
+            body: fd,
+          });
+
+          const data = await res.json();
+
+          if (!data.success) {
+            statusText.textContent = data.message || "Generation failed. Please try again.";
+            chordBox.innerHTML = '<span class="muted">No chords available.</span>';
+            fileBox.innerHTML = '<span class="muted">No file generated.</span>';
+            return;
+          }
+
+          statusText.textContent = data.message || "Generation completed.";
+
+          const chords = data.chord_preview || [];
+          chordBox.innerHTML = "";
+          if (chords.length === 0) {
+            chordBox.innerHTML = '<span class="muted">Back-end returned no chord labels.</span>';
+          } else {
+            chords.forEach((c) => {
+              const pill = document.createElement("span");
+              pill.className = "chord-pill";
+              pill.textContent = c;
+              chordBox.appendChild(pill);
+            });
+          }
+
+          fileBox.innerHTML = "";
+          if (data.file_url) {
+            const a = document.createElement("a");
+            a.href = data.file_url;
+            a.textContent = "Download generated MIDI";
+            a.download = "";
+            fileBox.appendChild(a);
+
+            audioPlayer.src = data.file_url;
+            audioPlayer.style.display = "block";
+          } else {
+            fileBox.innerHTML = '<span class="muted">No generated MIDI path returned.</span>';
+          }
+        } catch (err) {
+          console.error(err);
+          statusText.textContent = "Request failed. Please check if the back-end is running.";
+          chordBox.innerHTML = '<span class="muted">Request error.</span>';
+          fileBox.innerHTML = '<span class="muted">Request error.</span>';
+        } finally {
+          generateBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
