@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MELODY AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
+    <link rel="prefetch" href="input.html" />
+    <script type="speculationrules">{"prerender":[{"source":"list","urls":["input.html"]}],"prefetch":[{"source":"list","urls":["input.html"]}]}</script>
+    <style>
+      :root {
+        --bg-start: #0d1b3d;
+        --bg-end: #08122b;
+        --teal: #3cf2d4;
+        --blue: #4cc3ff;
+        --purple: #bc42ff;
+        --glass: rgba(18, 22, 35, 0.6);
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #cfe6ff;
+        background: radial-gradient(1200px 800px at 20% 10%, #0a1a44 0%, var(--bg-start) 40%, var(--bg-end) 100%);
+        overflow: hidden;
+        cursor: none;
+      }
+      .stage {
+        position: relative;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        padding: 6vh 6vw;
+      }
+      .title {
+        align-self: center;
+        justify-self: center;
+        text-align: center;
+        z-index: 2;
+        max-width: 1200px;
+        transform: translateY(-8vh);
+        position: relative;
+      }
+      
+      .title h1 {
+        margin: 0 0 16px 0;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        font-size: clamp(40px, 6.4vw, 96px);
+        line-height: 1.05;
+        background: linear-gradient(90deg, var(--teal), var(--blue) 40%, var(--purple));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0 10px rgba(76, 195, 255, 0.35)) drop-shadow(0 0 20px rgba(116, 92, 255, 0.28));
+        text-shadow: 0 0 8px rgba(76, 195, 255, 0.30), 0 0 18px rgba(116, 92, 255, 0.22);
+        position: relative;
+        z-index: 1;
+        animation: titleIn 0.8s ease-out 0.12s both;
+      }
+      .title p {
+        margin: 0;
+        font-size: clamp(16px, 2.2vw, 24px);
+        letter-spacing: 0.12em;
+        color: #92b6ff;
+        text-transform: uppercase;
+        animation: titleIn 0.9s ease-out 0.26s both;
+      }
+      .cta {
+        position: absolute;
+        top: 66vh;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+      }
+      .btn {
+        appearance: none;
+        border: none;
+        outline: none;
+        cursor: none;
+        padding: 18px 40px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12));
+        color: #d5e9ff;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        font-size: clamp(14px, 1.6vw, 18px);
+        backdrop-filter: blur(8px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(188, 66, 255, 0.18);
+        position: relative;
+        animation: btnIn 0.9s ease-out 0.42s both;
+      }
+      .btn::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 18px;
+        padding: 2px;
+        background: linear-gradient(90deg, var(--teal), var(--blue), var(--purple));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+      }
+      .btn:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(76, 195, 255, 0.25); }
+      .btn:active { transform: translateY(0); }
+
+      .waves {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        opacity: 0.75;
+        animation: layerIn 1.0s ease-out 0s both;
+      }
+      .particles {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.75;
+        mix-blend-mode: screen;
+        animation: layerIn 1.0s ease-out 0s both;
+      }
+      svg.waves { width: 100%; height: 100%; }
+      canvas.particles { width: 100%; height: 100%; }
+      .cursorNote {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 28px;
+        height: 28px;
+        pointer-events: none;
+        z-index: 2;
+        transform: translate3d(0, 0, 0) rotate(-12deg);
+        will-change: transform, opacity;
+        filter: drop-shadow(0 0 12px rgba(76,195,255,0.85)) drop-shadow(0 0 24px rgba(76,195,255,0.55)) drop-shadow(0 0 48px rgba(76,195,255,0.35));
+        mix-blend-mode: normal;
+        overflow: visible;
+        opacity: 0;
+        animation: cursorIn 0.6s ease-out 0.9s both;
+      }
+      @keyframes titleIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes btnIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes layerIn { from { opacity: 0; } to { opacity: 0.75; } }
+      @keyframes cursorIn { from { opacity: 0; } to { opacity: 1; } }
+      .title.toTop { animation: titleUp 0.42s cubic-bezier(0.22, 0.92, 0.30, 1) forwards; }
+      @keyframes titleUp { to { transform: translateY(-20vh); } }
+      @media (prefers-reduced-motion: reduce) {
+        .title, .title h1, .title p, .btn, .waves, .particles, .cursorNote { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+      }
+      @media (max-width: 640px) {
+        .stage { padding: 7vh 5vw; }
+        .title { transform: translateY(-4vh); }
+        .cta { top: 68vh; }
+        .btn { padding: 16px 28px; border-radius: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <section class="title">
+        <h1>MELODY AI</h1>
+        <p>AI-POWERED MELODY GENERATION</p>
+      </section>
+      <section class="cta">
+        <button id="start" class="btn">LET'S GO</button>
+      </section>
+
+      <canvas class="particles" aria-hidden="true"></canvas>
+      <svg class="waves" viewBox="0 0 3600 1000" preserveAspectRatio="none" aria-hidden="true" shape-rendering="optimizeSpeed">
+        <defs id="grads"></defs>
+        <g id="waveGroup" fill="none" stroke-width="1.6" opacity="0.75" stroke-linecap="round"></g>
+      </svg>
+      
+    </main>
+
+    <script>
+      const start = document.getElementById('start');
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const titleEl = document.querySelector('.title');
+      start.addEventListener('click', () => {
+        if (!prefersReduced) {
+          titleEl.classList.add('toTop');
+          const onEnd = (e) => {
+            if (e.animationName === 'titleUp') {
+              window.location.href = 'input.html';
+            }
+          };
+          titleEl.addEventListener('animationend', onEnd, { once: true });
+        } else {
+          window.location.href = 'input.html';
+        }
+      });
+
+      const stageEl = document.querySelector('.stage');
+      const particleCanvas = document.querySelector('canvas.particles');
+      const pctx = particleCanvas.getContext('2d');
+      let dpr = Math.min(2, window.devicePixelRatio || 1);
+      let pw = 0, ph = 0;
+      const dots = [];
+      function rand(a, b) { return a + Math.random() * (b - a); }
+      function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+      const pColors = [
+        'rgba(255,255,255,0.96)', 'rgba(255,255,255,0.96)', 'rgba(255,255,255,0.96)',
+        'rgba(192,220,255,0.95)', 'rgba(185,210,255,0.95)',
+        'rgba(150,200,255,0.95)',
+        'rgba(210,180,255,0.92)',
+        'rgba(120,245,255,0.95)',
+        'rgba(255,230,250,0.92)'
+      ];
+      function spawnDot() {
+        const big = Math.random() < 0.18;
+        const r = big ? rand(2.2, 3.8) : rand(0.6, 1.8);
+        const a = big ? rand(0.26, 0.58) : rand(0.18, 0.42);
+        const col = pick(pColors);
+        const tw = rand(0.6, 2.0);
+        const phs = rand(0, Math.PI * 2);
+        dots.push({ x: Math.random() * pw, y: Math.random() * ph, r, a, col, vx: rand(-0.01, 0.01), vy: rand(-0.008, 0.008), tw, phs });
+      }
+      function resizeParticles() {
+        const rect = stageEl.getBoundingClientRect();
+        pw = rect.width; ph = rect.height;
+        particleCanvas.width = Math.round(pw * dpr);
+        particleCanvas.height = Math.round(ph * dpr);
+        particleCanvas.style.width = pw + 'px';
+        particleCanvas.style.height = ph + 'px';
+        pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const target = Math.round((pw * ph) / 9000);
+        const count = Math.max(280, Math.min(900, target));
+        if (dots.length === 0) {
+          for (let i = 0; i < count; i++) spawnDot();
+        } else if (dots.length < count) {
+          for (let i = dots.length; i < count; i++) spawnDot();
+        } else if (dots.length > count) {
+          dots.length = count;
+        }
+      }
+      const sprite = document.createElement('canvas');
+      sprite.width = 64; sprite.height = 64;
+      const sctx = sprite.getContext('2d');
+      const grad = sctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0.0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+      grad.addColorStop(1.0, 'rgba(255,255,255,0)');
+      sctx.fillStyle = grad;
+      sctx.fillRect(0, 0, 64, 64);
+
+      function stepParticles() {
+        if (document.hidden) { requestAnimationFrame(stepParticles); return; }
+        pctx.clearRect(0, 0, pw, ph);
+        const tnow = performance.now() * 0.001;
+        pctx.globalCompositeOperation = 'screen';
+        for (let i = 0; i < dots.length; i++) {
+          const d = dots[i];
+          d.x += d.vx; d.y += d.vy;
+          if (d.x < -12) d.x = pw + 12; else if (d.x > pw + 12) d.x = -12;
+          if (d.y < -12) d.y = ph + 12; else if (d.y > ph + 12) d.y = -12;
+          const twinkle = 0.60 + 0.50 * Math.sin(tnow * d.tw + d.phs);
+          const alpha = Math.max(0.10, Math.min(1.0, d.a * twinkle));
+          pctx.globalAlpha = alpha;
+          pctx.fillStyle = d.col;
+          pctx.beginPath();
+          pctx.arc(d.x, d.y, Math.max(0.5, d.r * 0.6), 0, Math.PI * 2);
+          pctx.fill();
+          const sz = d.r * 2.8;
+          pctx.drawImage(sprite, d.x - sz / 2, d.y - sz / 2, sz, sz);
+        }
+        requestAnimationFrame(stepParticles);
+      }
+      resizeParticles();
+      stepParticles();
+      window.addEventListener('resize', resizeParticles, { passive: true });
+
+      const svg = document.querySelector('svg.waves');
+      const group = svg.querySelector('#waveGroup');
+      const defs = svg.querySelector('#grads');
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const width = 3600;
+      const FREQ = Math.PI * 6;
+      function makeBasis(segs) {
+        const step = width / segs;
+        const xs = [];
+        const sinA = [], cosA = [];
+        const sinA2 = [], cosA2 = [];
+        const sinB = [], cosB = [];
+        for (let x = step; x <= width; x += step) {
+          const tn = x / width;
+          xs.push(x);
+          const a = tn * FREQ;
+          sinA.push(Math.sin(a));
+          cosA.push(Math.cos(a));
+          const a2 = tn * FREQ * 2.2;
+          sinA2.push(Math.sin(a2));
+          cosA2.push(Math.cos(a2));
+          const b = tn * 2.9;
+          sinB.push(Math.sin(b));
+          cosB.push(Math.cos(b));
+        }
+        return { xs, sinA, cosA, sinA2, cosA2, sinB, cosB };
+      }
+      const bases = { 120: makeBasis(120), 160: makeBasis(160), 220: makeBasis(220) };
+      group.setAttribute('transform', 'rotate(-30 1800 500)');
+      const lines = 56;
+      const spacing = 84;
+      const baseY = -760;
+      const paths = [];
+      for (let i = 0; i < lines; i++) {
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const grad = document.createElementNS(svgNS, 'linearGradient');
+        grad.setAttribute('id', `grad${i}`);
+        grad.setAttribute('x1', '0%');
+        grad.setAttribute('y1', '0%');
+        grad.setAttribute('x2', '100%');
+        grad.setAttribute('y2', '0%');
+        const colors = [
+          `hsl(${190 + i * 5}, 100%, 62%)`,
+          `hsl(${220 + i * 5}, 100%, 60%)`,
+          `hsl(${260 + i * 5}, 100%, 62%)`,
+          `hsl(${300 + i * 5}, 100%, 66%)`
+        ];
+        const offsets = ['0%', '35%', '70%', '100%'];
+        for (let s = 0; s < colors.length; s++) {
+          const stop = document.createElementNS(svgNS, 'stop');
+          stop.setAttribute('offset', offsets[s]);
+          stop.setAttribute('stop-color', colors[s]);
+          grad.appendChild(stop);
+        }
+        defs.appendChild(grad);
+        p.setAttribute('stroke', `url(#grad${i})`);
+        p.setAttribute('stroke-width', '2.0');
+        p.setAttribute('opacity', '0.60');
+        group.appendChild(p);
+        paths.push(p);
+      }
+      function buildPath(y0, amp, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale) {
+        const parts = [];
+        parts.push(`M0,${y0 + amp * sinPH}`);
+        for (let i = 0; i < basis.xs.length; i++) {
+          const major = amp * (basis.sinA[i] * cosPH + basis.cosA[i] * sinPH);
+          const sA2c = basis.sinA2[i] * cosPH11 + basis.cosA2[i] * sinPH11;
+          const cBc = basis.cosB[i] * cosPH06 - basis.sinB[i] * sinPH06;
+          const ripple = rippleScale * amp * sA2c * cBc;
+          const y = y0 + major + ripple;
+          parts.push(` L${basis.xs[i]},${y}`);
+        }
+        return parts.join('');
+      }
+      let t = 0;
+      let lastFrameTime = performance.now();
+      let avgDt = 16;
+      function animate() {
+        if (document.hidden) { requestAnimationFrame(animate); return; }
+        const now = performance.now();
+        const dt = Math.max(8, now - lastFrameTime);
+        lastFrameTime = now;
+        avgDt = avgDt * 0.9 + dt * 0.1;
+        const fps = 1000 / avgDt;
+        t += 0.014;
+        const ampWanted = spacing * 1.10 + spacing * 0.18 * Math.sin(t * 0.14);
+        const amp = Math.min(spacing * 0.55, ampWanted);
+        const segs = fps < 35 ? 120 : (fps < 50 ? 160 : 220);
+        const basis = bases[segs];
+        const rippleScale = fps < 45 ? 0.12 : 0.18;
+        const groupOffset = spacing * 0.085 * Math.sin(t * 0.46);
+        const phase = t * 0.58;
+        const sinPH = Math.sin(phase);
+        const cosPH = Math.cos(phase);
+        const sinPH11 = Math.sin(phase * 1.1);
+        const cosPH11 = Math.cos(phase * 1.1);
+        const sinPH06 = Math.sin(phase * 0.6);
+        const cosPH06 = Math.cos(phase * 0.6);
+        const ampLine = amp;
+        for (let i = 0; i < lines; i++) {
+          const y0 = baseY + i * spacing + groupOffset;
+          paths[i].setAttribute('d', buildPath(y0, ampLine, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale));
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      const cursorNote = document.createElement('div');
+      cursorNote.className = 'cursorNote';
+      document.body.appendChild(cursorNote);
+      const noteSvg = document.createElementNS(svgNS, 'svg');
+      noteSvg.setAttribute('viewBox', '-24 -36 96 192');
+      noteSvg.setAttribute('width', '28');
+      noteSvg.setAttribute('height', '28');
+      noteSvg.style.overflow = 'visible';
+      const noteText = document.createElementNS(svgNS, 'text');
+      noteText.setAttribute('x', '24');
+      noteText.setAttribute('y', '48');
+      noteText.setAttribute('text-anchor', 'middle');
+      noteText.setAttribute('dominant-baseline', 'middle');
+      noteText.setAttribute('font-family', '"Noto Music", serif');
+      noteText.setAttribute('font-size', '96');
+      noteText.setAttribute('paint-order', 'stroke fill');
+      noteText.setAttribute('stroke-width', '2');
+      noteText.textContent = '\uD834\uDD1E';
+      noteSvg.appendChild(noteText);
+      cursorNote.appendChild(noteSvg);
+
+
+
+      let cx = innerWidth / 2, cy = innerHeight / 2;
+      let tx = cx, ty = cy;
+      let prevX = tx, prevY = ty, prevTime = performance.now();
+      let speedScale = 0; // 0..1
+      const half = 14;
+      let bcx = 0, bcy = 0;
+      function measureBtn() {
+        const rect = start.getBoundingClientRect();
+        bcx = rect.left + rect.width / 2;
+        bcy = rect.top + rect.height / 2;
+      }
+      measureBtn();
+      window.addEventListener('resize', measureBtn, { passive: true });
+
+
+
+      
+
+      function track() {
+        const now = performance.now();
+        const dt = Math.max(16, now - prevTime);
+        const dx = tx - prevX; const dy = ty - prevY;
+        const v = Math.sqrt(dx * dx + dy * dy) / dt; // px/ms
+        speedScale = Math.min(1, v * 2); // scale up for sensitivity
+        prevX = tx; prevY = ty; prevTime = now;
+
+        cx += (tx - cx) * 0.22;
+        cy += (ty - cy) * 0.22;
+        cursorNote.style.transform = `translate3d(${(cx - half).toFixed(2)}px, ${(cy - half).toFixed(2)}px, 0) rotate(-12deg)`;
+
+        const fillCol = 'rgb(80,245,255)';
+        const strokeCol = 'rgb(255,255,255)';
+        noteText.setAttribute('fill', fillCol);
+        noteText.setAttribute('stroke', strokeCol);
+
+        requestAnimationFrame(track);
+      }
+      window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; }, { passive: true });
+      track();
+
+
+    </script>
+  </body>
+</html>

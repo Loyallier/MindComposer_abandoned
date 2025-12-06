@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MELODY AI — 输入</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-start: #0d1b3d;
+        --bg-end: #08122b;
+        --teal: #3cf2d4;
+        --blue: #4cc3ff;
+        --purple: #bc42ff;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #cfe6ff;
+        background: radial-gradient(1200px 800px at 20% 10%, #0a1a44 0%, var(--bg-start) 40%, var(--bg-end) 100%);
+        overflow: hidden;
+        cursor: none;
+      }
+      .stage {
+        position: relative;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        align-items: start;
+        justify-items: center;
+        padding: 8vh 6vw;
+      }
+      .title {
+        text-align: center;
+        margin-top: 12vh;
+        margin-bottom: 6vh;
+        animation: none;
+        z-index: 2;
+      }
+      .title h1 {
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        font-size: clamp(40px, 6.4vw, 96px);
+        line-height: 1.05;
+        background: linear-gradient(90deg, var(--teal), var(--blue) 40%, var(--purple));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0 10px rgba(76,195,255,0.35)) drop-shadow(0 0 20px rgba(116,92,255,0.28));
+        text-shadow: 0 0 8px rgba(76,195,255,0.30), 0 0 18px rgba(116,92,255,0.22);
+      }
+      .panel {
+        width: clamp(320px, 48vw, 620px);
+        padding: 28px 28px 28px 28px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #10224a 0%, #0c1e3f 52%), radial-gradient(120% 90% at 0% 0%, rgba(84,255,232,0.12) 0%, rgba(225,123,255,0.12) 100%);
+        background-blend-mode: screen;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 36px rgba(76, 195, 255, 0.10);
+        position: relative;
+        animation: panelIn 0.9s ease-out 0.26s both;
+        z-index: 2;
+        transition: background 0.6s ease, box-shadow 0.6s ease, filter 0.6s ease;
+        filter: brightness(0.90) contrast(0.96);
+      }
+      .panel.melody { --blue: #5aa4ff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); filter: brightness(0.90) contrast(0.96); }
+      .panel.melody .label { color: #9fc7ff; }
+      .panel.melody .optionIcon { background: #5aa4ff; }
+      .panel.melody .input, .panel.melody .select { 
+        background: linear-gradient(180deg, #1f2e4f 0%, #17294d 100%);
+        background-blend-mode: normal;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(96,160,255,0.28);
+      }
+      .panel.melody .btn { background: var(--blue); box-shadow: inset 0 1px 0 rgba(255,255,255,0.10); }
+      .panel::before { transition: background-position 0.6s ease, opacity 0.6s ease; }
+      .panel::after { content: ""; position: absolute; inset: 0; border-radius: 18px; background: radial-gradient(120% 90% at 0% 0%, rgba(90,164,255,0.18) 0%, rgba(90,164,255,0.08) 100%); opacity: 0; transition: opacity 0.6s ease; pointer-events: none; mix-blend-mode: screen; }
+      .panel.melody::after { opacity: 0; }
+      .panel.melody::before { background: linear-gradient(90deg, var(--blue), var(--blue)); background-size: 100% 100%; }
+      .panel::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 20px;
+        padding: 2px;
+        background: linear-gradient(90deg, var(--teal), var(--blue), var(--purple));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+      }
+      .field { margin: 0 0 18px 0; }
+      .label { font-size: 14px; letter-spacing: 0.12em; color: #9cc4ff; margin: 0 0 10px 2px; transition: color 0.6s ease; }
+      .input, .select {
+        width: 100%;
+        height: 48px;
+        border-radius: 14px;
+        border: none;
+        outline: none;
+        padding: 0 16px;
+        font-size: 16px;
+        color: #d5e9ff;
+        background: linear-gradient(180deg, #162b56, #132246), linear-gradient(90deg, rgba(84,255,232,0.14), rgba(225,123,255,0.14));
+        background-blend-mode: screen;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(140,200,255,0.20);
+        transition: background 0.28s ease, box-shadow 0.28s ease;
+      }
+      .upload { display: flex; align-items: center; gap: 12px; padding: 0 12px; }
+      .pickBtn {
+        appearance: none;
+        border: none;
+        outline: none;
+        cursor: none;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.18));
+        color: #d5e9ff;
+        font-weight: 700;
+        letter-spacing: 0.10em;
+        font-size: 12px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      }
+      .fileName { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
+      .select { appearance: none; }
+      .actions { padding-top: 6px; }
+      .selectWrap { position: relative; }
+      .selectBox { display: flex; align-items: center; justify-content: space-between; cursor: none; }
+      .dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 8px); background: linear-gradient(180deg, #0f1b34, #0a1428); border-radius: 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 36px rgba(76, 195, 255, 0.10); padding: 6px; display: none; z-index: 3; }
+      .dropdown.open { display: block; }
+      .dropdown.twoCols { display: none; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .dropdown.twoCols.open { display: grid; }
+      .option { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; color: #d5e9ff; cursor: none; }
+      .option:hover { background: rgba(255,255,255,0.06); }
+      .optionIcon { width: 10px; height: 10px; border-radius: 50%; background: #9cc4ff; opacity: 0.9; transition: background-color 0.6s ease; }
+      .optionLabel { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .btn {
+        width: 100%;
+        height: 52px;
+        border-radius: 16px;
+        border: none;
+        outline: none;
+        cursor: none;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        font-size: 16px;
+        color: #d5e9ff;
+        background: linear-gradient(90deg, var(--blue), var(--purple));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(76, 195, 255, 0.16);
+        transition: background-color 0.6s ease, box-shadow 0.6s ease, filter 0.6s ease;
+      }
+      .btn:disabled { opacity: 0.7; cursor: default; }
+      .status { margin-top: 14px; font-size: 14px; letter-spacing: 0.06em; color: #9cc4ff; opacity: 0.92; }
+      .player { width: 100%; margin-top: 8px; display: none; cursor: none; }
+      .modeToggle { display: flex; align-items: center; gap: 14px; padding: 0 12px; }
+      .modeLabel { font-weight: 700; letter-spacing: 0.10em; font-size: 12px; color: #9cc4ff; opacity: 0.92; }
+      .toggle {
+        width: 64px;
+        height: 32px;
+        border: none;
+        outline: none;
+        cursor: none;
+        border-radius: 16px;
+        position: relative;
+        background: linear-gradient(180deg, #142440, #0f1d36);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 24px rgba(76,195,255,0.10);
+        transition: background 0.18s ease;
+      }
+      .toggle.on { background: linear-gradient(180deg, #142440, #0f1d36); }
+      .toggle.off { background: linear-gradient(180deg, #142440, #0f1d36); }
+      .toggle .thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.50) inset;
+        transition: left 0.18s ease;
+      }
+      .toggle.off .thumb { left: 34px; }
+      .waves {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        opacity: 0.75;
+        animation: layerIn 1.0s ease-out 0s both;
+      }
+      .particles {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.75;
+        mix-blend-mode: screen;
+        animation: layerIn 1.0s ease-out 0s both;
+      }
+      svg.waves { width: 100%; height: 100%; }
+      canvas.particles { width: 100%; height: 100%; }
+      .cursorNote {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 28px;
+        height: 28px;
+        pointer-events: none;
+        z-index: 2;
+        transform: translate3d(0, 0, 0) rotate(-12deg);
+        will-change: transform;
+        filter: drop-shadow(0 0 12px rgba(76,195,255,0.85)) drop-shadow(0 0 24px rgba(76,195,255,0.55)) drop-shadow(0 0 48px rgba(76,195,255,0.35));
+        mix-blend-mode: normal;
+        overflow: visible;
+      }
+      @keyframes titleIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes panelIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes layerIn { from { opacity: 0; } to { opacity: 0.75; } }
+      @keyframes glowShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+      @media (max-width: 640px) { .stage { padding: 6vh 5vw; } .title { margin-bottom: 4vh; } }
+      @media (prefers-reduced-motion: reduce) { .title, .panel, .waves { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <section class="title">
+        <h1>MELODY AI</h1>
+      </section>
+      <section class="panel">
+        <form id="melody">
+          <div class="field">
+            <div class="label">Upload File:</div>
+            <input id="file" type="file" accept=".mid,.midi,.wav,.mp3" style="display:none" />
+            <div class="input upload">
+              <button id="pick" class="pickBtn" type="button">CHOOSE FILE</button>
+              <span id="fileName" class="fileName">No file selected</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">Tempo:</div>
+            <div class="selectWrap">
+              <div id="tempoBox" class="input selectBox">120 BPM</div>
+              <div id="tempoMenu" class="dropdown"></div>
+            </div>
+            <select id="tempo" style="display:none"></select>
+          </div>
+          <div class="field">
+            <div class="label">Style:</div>
+            <div class="selectWrap">
+              <div id="styleBox" class="input selectBox">Pop</div>
+              <div id="styleMenu" class="dropdown twoCols"></div>
+            </div>
+            <select id="style" style="display:none"></select>
+          </div>
+          <div class="field">
+            <div class="label">Mode:</div>
+            <div class="input modeToggle">
+              <div class="modeLabel">Chord</div>
+              <button id="modeToggle" class="toggle on" type="button" aria-pressed="true"><span class="thumb"></span></button>
+              <div class="modeLabel">Melody</div>
+            </div>
+            <input id="mode" type="hidden" value="chord" />
+          </div>
+          <div class="actions">
+            <button id="gen" class="btn" type="submit">GENERATE MELODY</button>
+          </div>
+        </form>
+        <div id="status" class="status"></div>
+        <audio id="player" class="player" controls></audio>
+      </section>
+
+      <canvas class="particles" aria-hidden="true"></canvas>
+      <svg class="waves" viewBox="0 0 3600 1000" preserveAspectRatio="none" aria-hidden="true" shape-rendering="optimizeSpeed">
+        <defs id="grads"></defs>
+        <g id="waveGroup" fill="none" stroke-width="1.6" opacity="0.75" stroke-linecap="round"></g>
+      </svg>
+    </main>
+
+    <script>
+      const stageEl = document.querySelector('.stage');
+      const particleCanvas = document.createElement('canvas');
+      particleCanvas.className = 'particles';
+      particleCanvas.setAttribute('aria-hidden', 'true');
+      document.querySelector('.stage').insertBefore(particleCanvas, document.querySelector('svg.waves'));
+      const pctx = particleCanvas.getContext('2d');
+      let dpr = Math.min(2, window.devicePixelRatio || 1);
+      let pw = 0, ph = 0;
+      const dots = [];
+      function rand(a, b) { return a + Math.random() * (b - a); }
+      function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+      const pColors = [
+        'rgba(255,255,255,0.96)', 'rgba(255,255,255,0.96)', 'rgba(255,255,255,0.96)',
+        'rgba(192,220,255,0.95)', 'rgba(185,210,255,0.95)',
+        'rgba(150,200,255,0.95)',
+        'rgba(210,180,255,0.92)',
+        'rgba(120,245,255,0.95)',
+        'rgba(255,230,250,0.92)'
+      ];
+      function spawnDot() {
+        const big = Math.random() < 0.18;
+        const r = big ? rand(2.2, 3.8) : rand(0.6, 1.8);
+        const a = big ? rand(0.26, 0.58) : rand(0.18, 0.42);
+        const col = pick(pColors);
+        const tw = rand(0.6, 2.0);
+        const phs = rand(0, Math.PI * 2);
+        dots.push({ x: Math.random() * pw, y: Math.random() * ph, r, a, col, vx: rand(-0.01, 0.01), vy: rand(-0.008, 0.008), tw, phs });
+      }
+      function resizeParticles() {
+        const rect = stageEl.getBoundingClientRect();
+        pw = rect.width; ph = rect.height;
+        particleCanvas.width = Math.round(pw * dpr);
+        particleCanvas.height = Math.round(ph * dpr);
+        particleCanvas.style.width = pw + 'px';
+        particleCanvas.style.height = ph + 'px';
+        pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const target = Math.round((pw * ph) / 9000);
+        const count = Math.max(280, Math.min(900, target));
+        if (dots.length === 0) {
+          for (let i = 0; i < count; i++) spawnDot();
+        } else if (dots.length < count) {
+          for (let i = dots.length; i < count; i++) spawnDot();
+        } else if (dots.length > count) {
+          dots.length = count;
+        }
+      }
+      const sprite = document.createElement('canvas');
+      sprite.width = 64; sprite.height = 64;
+      const sctx = sprite.getContext('2d');
+      const grad = sctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0.0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+      grad.addColorStop(1.0, 'rgba(255,255,255,0)');
+      sctx.fillStyle = grad;
+      sctx.fillRect(0, 0, 64, 64);
+      function stepParticles() {
+        if (document.hidden) { requestAnimationFrame(stepParticles); return; }
+        pctx.clearRect(0, 0, pw, ph);
+        const tnow = performance.now() * 0.001;
+        pctx.globalCompositeOperation = 'screen';
+        for (let i = 0; i < dots.length; i++) {
+          const d = dots[i];
+          d.x += d.vx; d.y += d.vy;
+          if (d.x < -12) d.x = pw + 12; else if (d.x > pw + 12) d.x = -12;
+          if (d.y < -12) d.y = ph + 12; else if (d.y > ph + 12) d.y = -12;
+          const twinkle = 0.60 + 0.50 * Math.sin(tnow * d.tw + d.phs);
+          const alpha = Math.max(0.10, Math.min(1.0, d.a * twinkle));
+          pctx.globalAlpha = alpha;
+          pctx.fillStyle = d.col;
+          pctx.beginPath();
+          pctx.arc(d.x, d.y, Math.max(0.5, d.r * 0.6), 0, Math.PI * 2);
+          pctx.fill();
+          const sz = d.r * 2.8;
+          pctx.drawImage(sprite, d.x - sz / 2, d.y - sz / 2, sz, sz);
+        }
+        requestAnimationFrame(stepParticles);
+      }
+      resizeParticles();
+      stepParticles();
+      window.addEventListener('resize', resizeParticles, { passive: true });
+      const form = document.getElementById('melody');
+      const gen = document.getElementById('gen');
+      const fileInput = document.getElementById('file');
+      const pickBtn = document.getElementById('pick');
+      const fileNameEl = document.getElementById('fileName');
+      const tempoSel = document.getElementById('tempo');
+      const styleSel = document.getElementById('style');
+      const statusEl = document.getElementById('status');
+      const player = document.getElementById('player');
+      const modeBtn = document.getElementById('modeToggle');
+      const modeInput = document.getElementById('mode');
+      const panelEl = document.querySelector('.panel');
+      function setupDropdown(id, items, def) {
+        const box = document.getElementById(id + 'Box');
+        const menu = document.getElementById(id + 'Menu');
+        const selectEl = document.getElementById(id);
+        selectEl.innerHTML = '';
+        for (let i = 0; i < items.length; i++) {
+          const txt = items[i];
+          const opt = document.createElement('option');
+          opt.value = txt; opt.textContent = txt; if (txt === def) opt.selected = true; selectEl.appendChild(opt);
+          const row = document.createElement('div'); row.className = 'option'; row.dataset.value = txt;
+          const dot = document.createElement('div'); dot.className = 'optionIcon';
+          const lab = document.createElement('div'); lab.className = 'optionLabel'; lab.textContent = txt;
+          row.appendChild(dot); row.appendChild(lab); menu.appendChild(row);
+        }
+        box.textContent = def;
+        function open() { menu.classList.add('open'); }
+        function close() { menu.classList.remove('open'); }
+        box.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.contains('open') ? close() : open(); });
+        menu.addEventListener('click', (e) => { const t = e.target.closest('.option'); if (!t) return; const val = t.dataset.value; box.textContent = val; selectEl.value = val; close(); statusEl.textContent = ''; });
+        document.addEventListener('click', () => close());
+      }
+      setupDropdown('tempo', ['60 BPM','80 BPM','100 BPM','120 BPM','140 BPM','160 BPM','180 BPM','200 BPM'], '120 BPM');
+      setupDropdown('style', ['Pop','Rock','Jazz','Classical','Hip-Hop','EDM','Lo-Fi','Metal','Folk','R&B'], 'Pop');
+      pickBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        const name = (fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : 'No file selected';
+        fileNameEl.textContent = name;
+      });
+      function setMode(m, instant) {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const dur = instant || reduce ? 0 : 600;
+        if (dur > 0) { panelEl.style.transition = `opacity ${dur}ms ease`; panelEl.style.opacity = '0'; }
+        if (m === 'chord') {
+          modeBtn.classList.add('on');
+          modeBtn.classList.remove('off');
+          modeBtn.setAttribute('aria-pressed', 'true');
+          modeInput.value = 'chord';
+          gen.textContent = 'GENERATE CHORDS';
+        } else {
+          modeBtn.classList.add('off');
+          modeBtn.classList.remove('on');
+          modeBtn.setAttribute('aria-pressed', 'false');
+          modeInput.value = 'melody';
+          gen.textContent = 'GENERATE MELODY';
+        }
+        panelEl.classList.toggle('melody', m === 'chord');
+        statusEl.textContent = '';
+        if (dur > 0) { setTimeout(() => { panelEl.style.opacity = '1'; }, Math.max(0, Math.floor(dur * 0.4))); }
+      }
+      setMode(modeInput.value, true);
+      modeBtn.addEventListener('click', () => { setMode(modeInput.value === 'chord' ? 'melody' : 'chord', false); });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const file = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+        if (!file) {
+          statusEl.textContent = 'Please choose a file.';
+          return;
+        }
+        const mode = modeInput.value;
+        sessionStorage.setItem('mode', mode);
+        sessionStorage.setItem('pendingName', file.name);
+        sessionStorage.setItem('tempo', tempoSel.value);
+        sessionStorage.setItem('style', styleSel.value);
+        window.location.href = `thinking.html?mode=${mode}`;
+      });
+
+      const svg = document.querySelector('svg.waves');
+      const group = svg.querySelector('#waveGroup');
+      const defs = svg.querySelector('#grads');
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const width = 3600;
+      const FREQ = Math.PI * 6;
+      function makeBasis(segs) {
+        const step = width / segs;
+        const xs = [];
+        const sinA = [], cosA = [];
+        const sinA2 = [], cosA2 = [];
+        const sinB = [], cosB = [];
+        for (let x = step; x <= width; x += step) {
+          const tn = x / width;
+          xs.push(x);
+          const a = tn * FREQ;
+          sinA.push(Math.sin(a));
+          cosA.push(Math.cos(a));
+          const a2 = tn * FREQ * 2.2;
+          sinA2.push(Math.sin(a2));
+          cosA2.push(Math.cos(a2));
+          const b = tn * 2.9;
+          sinB.push(Math.sin(b));
+          cosB.push(Math.cos(b));
+        }
+        return { xs, sinA, cosA, sinA2, cosA2, sinB, cosB };
+      }
+      const bases = { 120: makeBasis(120), 160: makeBasis(160), 220: makeBasis(220) };
+      group.setAttribute('transform', 'rotate(-30 1800 500)');
+      const lines = 56;
+      const spacing = 84;
+      const baseY = -760;
+      const paths = [];
+      for (let i = 0; i < lines; i++) {
+        const p = document.createElementNS(svgNS, 'path');
+        const grad = document.createElementNS(svgNS, 'linearGradient');
+        grad.setAttribute('id', `grad${i}`);
+        grad.setAttribute('x1', '0%');
+        grad.setAttribute('y1', '0%');
+        grad.setAttribute('x2', '100%');
+        grad.setAttribute('y2', '0%');
+        const colors = [
+          `hsl(${190 + i * 5}, 100%, 62%)`,
+          `hsl(${220 + i * 5}, 100%, 60%)`,
+          `hsl(${260 + i * 5}, 100%, 62%)`,
+          `hsl(${300 + i * 5}, 100%, 66%)`
+        ];
+        const offsets = ['0%', '35%', '70%', '100%'];
+        for (let s = 0; s < colors.length; s++) {
+          const stop = document.createElementNS(svgNS, 'stop');
+          stop.setAttribute('offset', offsets[s]);
+          stop.setAttribute('stop-color', colors[s]);
+          grad.appendChild(stop);
+        }
+        defs.appendChild(grad);
+        p.setAttribute('stroke', `url(#grad${i})`);
+        p.setAttribute('stroke-width', '2.0');
+        p.setAttribute('opacity', '0.60');
+        group.appendChild(p);
+        paths.push(p);
+      }
+      function buildPath(y0, amp, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale) {
+        const parts = [];
+        parts.push(`M0,${y0 + amp * sinPH}`);
+        for (let i = 0; i < basis.xs.length; i++) {
+          const major = amp * (basis.sinA[i] * cosPH + basis.cosA[i] * sinPH);
+          const sA2c = basis.sinA2[i] * cosPH11 + basis.cosA2[i] * sinPH11;
+          const cBc = basis.cosB[i] * cosPH06 - basis.sinB[i] * sinPH06;
+          const ripple = rippleScale * amp * sA2c * cBc;
+          const y = y0 + major + ripple;
+          parts.push(` L${basis.xs[i]},${y}`);
+        }
+        return parts.join('');
+      }
+      let t = 0;
+      let lastFrameTime = performance.now();
+      let avgDt = 16;
+      function animate() {
+        if (document.hidden) { requestAnimationFrame(animate); return; }
+        const now = performance.now();
+        const dt = Math.max(8, now - lastFrameTime);
+        lastFrameTime = now;
+        avgDt = avgDt * 0.9 + dt * 0.1;
+        const fps = 1000 / avgDt;
+        t += 0.014;
+        const ampWanted = spacing * 1.10 + spacing * 0.18 * Math.sin(t * 0.14);
+        const amp = Math.min(spacing * 0.55, ampWanted);
+        const segs = fps < 35 ? 120 : (fps < 50 ? 160 : 220);
+        const basis = bases[segs];
+        const rippleScale = fps < 45 ? 0.12 : 0.18;
+        const groupOffset = spacing * 0.085 * Math.sin(t * 0.46);
+        const phase = t * 0.58;
+        const sinPH = Math.sin(phase);
+        const cosPH = Math.cos(phase);
+        const sinPH11 = Math.sin(phase * 1.1);
+        const cosPH11 = Math.cos(phase * 1.1);
+        const sinPH06 = Math.sin(phase * 0.6);
+        const cosPH06 = Math.cos(phase * 0.6);
+        const ampLine = amp;
+        for (let i = 0; i < lines; i++) {
+          const y0 = baseY + i * spacing + groupOffset;
+          paths[i].setAttribute('d', buildPath(y0, ampLine, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale));
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      const cursorNote = document.createElement('div');
+      cursorNote.className = 'cursorNote';
+      document.body.appendChild(cursorNote);
+      const noteSvg = document.createElementNS(svgNS, 'svg');
+      noteSvg.setAttribute('viewBox', '-24 -36 96 192');
+      noteSvg.setAttribute('width', '28');
+      noteSvg.setAttribute('height', '28');
+      noteSvg.style.overflow = 'visible';
+      const noteText = document.createElementNS(svgNS, 'text');
+      noteText.setAttribute('x', '24');
+      noteText.setAttribute('y', '48');
+      noteText.setAttribute('text-anchor', 'middle');
+      noteText.setAttribute('dominant-baseline', 'middle');
+      noteText.setAttribute('font-family', '"Noto Music", serif');
+      noteText.setAttribute('font-size', '96');
+      noteText.setAttribute('paint-order', 'stroke fill');
+      noteText.setAttribute('stroke-width', '2');
+      noteText.textContent = '\uD834\uDD1E';
+      noteSvg.appendChild(noteText);
+      cursorNote.appendChild(noteSvg);
+
+      let cx = innerWidth / 2, cy = innerHeight / 2;
+      let tx = cx, ty = cy;
+      let prevX = tx, prevY = ty, prevTime = performance.now();
+      let speedScale = 0;
+      const half = 14;
+      function track() {
+        const now = performance.now();
+        const dt = Math.max(16, now - prevTime);
+        const dx = tx - prevX; const dy = ty - prevY;
+        const v = Math.sqrt(dx * dx + dy * dy) / dt;
+        speedScale = Math.min(1, v * 2);
+        prevX = tx; prevY = ty; prevTime = now;
+        cx += (tx - cx) * 0.22;
+        cy += (ty - cy) * 0.22;
+        cursorNote.style.transform = `translate3d(${(cx - half).toFixed(2)}px, ${(cy - half).toFixed(2)}px, 0) rotate(-12deg)`;
+        const blue = [76, 195, 255];
+        const purple = [116, 92, 255];
+        const bias = 0.25 * speedScale;
+        const col = [
+          Math.round(blue[0] * (1 - bias) + purple[0] * bias),
+          Math.round(blue[1] * (1 - bias) + purple[1] * bias),
+          Math.round(blue[2] * (1 - bias) + purple[2] * bias)
+        ];
+        noteText.setAttribute('fill', `rgb(${col[0]},${col[1]},${col[2]})`);
+        noteText.setAttribute('stroke', `rgb(${col[0]},${col[1]},${col[2]})`);
+        requestAnimationFrame(track);
+      }
+      window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; }, { passive: true });
+      track();
+    </script>
+  </body>
+</html>
