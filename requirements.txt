@@ -1,0 +1,19 @@
+# === A ===
+# 深度学习框架 (建议手动安装以匹配CUDA版本)
+torch>=2.0.0
+torchvision
+torchaudio
+
+# 科学计算与数据处理
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+
+# 进度条
+tqdm
+
+# === B ===
+
+# === C ===
