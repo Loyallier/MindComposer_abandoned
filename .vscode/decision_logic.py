@@ -138,12 +138,19 @@ def generate_accompaniment_part(
             current_offset += segment_length
             continue
             
+        # 【新增】处理 NoChord/休止符号 '0'
+        if chord_type == 'NoChord':
+            logger.debug(f"和弦 {chord_label} 为 NoChord/休止，跳过该片段，不生成伴奏。")
+            current_offset += segment_length
+            continue
+            
         offsets = CHORD_TYPES[chord_type]
         # 根音定在 C3 (MIDI 48) 八度，作为琶音或其他音符的基准
         root_midi = m21.pitch.Pitch(root_name + '3').midi 
 
         # 2. 决策：选择织体模板
         pattern_name = select_texture_pattern(selected_style, density)
+        # ... (rest of the template selection logic remains unchanged) ...
         template = PATTERN_TEMPLATES.get(pattern_name)
         
         if not template:
@@ -154,6 +161,7 @@ def generate_accompaniment_part(
         logger.debug(f"和弦 {chord_label}, 时长 {segment_length:.2f} QL, 织体 {pattern_name}")
 
         # 3. 实例化音符并插入 Part (关键步骤：循环填充整个和弦时长)
+        # ... (rest of the note insertion logic remains unchanged) ...
         time_elapsed_in_segment = 0.0
         
         # 确定模板的时长，以便重复填充
