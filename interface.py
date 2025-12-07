@@ -3,6 +3,9 @@ import time
 import logging
 import shutil
 from typing import List, Dict, Any, Union
+# 【新增】导入 music21 和 B 组生成逻辑
+import music21 as m21
+from decision_logic_B import render_accompaniment_from_raw_inputs # 导入 B 组主入口函数
 
 # ==========================================
 # 0. 全局配置 (Global Configuration)
@@ -115,19 +118,41 @@ def render_music(
 
     else:
         # --- Real 模式 (真实渲染) ---
-        # TODO: [B组填空]
-        # 1. 使用 music21 读取 melody_midi_path
-        # 2. 解析 chord_sequence (处理 '_' 延音标记，计算每个和弦的时长)
-        # 3. 根据 style 调用对应的伴奏模板 (Pattern)
-        # 4. 将生成的伴奏音符写入新的 Track
-        # 5. 合并旋律和伴奏，保存到 output_path
         
-        # from src.generator import AccompanimentGenerator
-        # gen = AccompanimentGenerator()
-        # gen.render(melody_midi_path, chord_sequence, style, output_path)
-        # return output_path
-        
-        raise NotImplementedError("B组生成逻辑尚未接入！")
+        try:
+            # 1. 调用 B 组的主入口函数，生成伴奏 Part
+            accompaniment_part = render_accompaniment_from_raw_inputs(
+                melody_midi_path, 
+                chord_sequence, 
+                style
+            )
+            
+            # 2. 读取原始旋律 Score
+            original_score = m21.converter.parse(melody_midi_path)
+            
+            # 3. 创建最终 Score 并合并旋律和伴奏
+            final_score = m21.stream.Score()
+            
+            # 找到原始旋律 part (通常是第一个)
+            if original_score.parts:
+                final_score.insert(0, original_score.parts[0])
+            else:
+                logger.warning("无法从 MIDI 文件中提取旋律 Part。仅包含伴奏。")
+                
+            # 插入伴奏 Part (确保插入到正确的位置，通常是 0.0 offset)
+            final_score.insert(0, accompaniment_part)
+
+            # 4. 保存为 MIDI 文件
+            final_score.write('midi', fp=output_path)
+            
+            logger.info(f"真实生成完毕: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"B组生成逻辑出错: {e}", exc_info=True)
+            # 为了不阻断流程，可以在失败时创建一个空的 Part 并保存
+            m21.stream.Part().write('midi', fp=output_path)
+            raise RuntimeError(f"音乐生成失败: {e}")
 
 # ==========================================
 # 3. Group C: 主控接口 (Main Pipeline)
