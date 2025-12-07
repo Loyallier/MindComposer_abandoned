@@ -2,7 +2,7 @@ import music21 as m21
 from typing import List, Dict, Tuple
 import logging
 import math
-from data_logic import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
+from data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
 
 # 初始化日志
 logger = logging.getLogger("B_Decision")
