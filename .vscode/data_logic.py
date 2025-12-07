@@ -17,6 +17,7 @@ CHORD_TYPES: Dict[str, List[int]] = {
     "sus4": [0, 5, 7],      # 挂四和弦 (Root, P4, P5)
     "Maj6": [0, 4, 7, 9],   # 大六和弦 (Root, M3, P5, M6)
     "min6": [0, 3, 7, 9],   # 小六和弦 (Root, m3, P5, M6)
+    "NoChord": [],          # 【新增】休止符号 '0' 对应的类型，不含任何音高偏移
 }
 
 # B. 和弦解析函数 (Chord Parsing Function)
@@ -25,22 +26,22 @@ def parse_simplified_chord(chord_label: str) -> Tuple[str, str]:
     将简化的和弦标签解析为根音名称和和弦类型。
     例如: 'C#m7' -> ('C#', 'min7')
     """
+    
+    # 【新增】特殊符号处理：'0' 和 '_' 不通过标准解析
+    if chord_label == '0':
+        return 'C', 'NoChord' # 根音用 C 占位，类型为 NoChord
+    if chord_label == '_':
+        # 此函数不应处理 '_'，如果传入，说明调用逻辑有误，返回一个默认值
+        return 'C', 'Maj' 
+
     root_name = ""
     chord_type = ""
     
     # 提取可能的根音（A-G，可能带 # 或 b）
-    if chord_label.startswith('A#'): root_name = 'A#'; remaining = chord_label[2:]
-    elif chord_label.startswith('Ab'): root_name = 'A-'; remaining = chord_label[2:]
-    elif chord_label.startswith('Bb'): root_name = 'B-'; remaining = chord_label[2:]
-    elif chord_label.startswith('B#'): root_name = 'B#'; remaining = chord_label[2:]
-    elif chord_label.startswith('C#'): root_name = 'C#'; remaining = chord_label[2:]
-    elif chord_label.startswith('Db'): root_name = 'D-'; remaining = chord_label[2:]
-    elif chord_label.startswith('D#'): root_name = 'D#'; remaining = chord_label[2:]
-    elif chord_label.startswith('Eb'): root_name = 'E-'; remaining = chord_label[2:]
-    elif chord_label.startswith('E#'): root_name = 'E#'; remaining = chord_label[2:]
-    elif chord_label.startswith('F#'): root_name = 'F#'; remaining = chord_label[2:]
-    elif chord_label.startswith('Gb'): root_name = 'G-'; remaining = chord_label[2:]
-    elif chord_label.startswith('G#'): root_name = 'G#'; remaining = chord_label[2:]
+    # 优先处理双字符根音 (e.g., 'A#', 'Bb')
+    if len(chord_label) >= 2 and chord_label[1] in ('#', 'b', '-'): 
+        root_name = chord_label[:2].replace('b', '-')
+        remaining = chord_label[2:]
     elif chord_label and chord_label[0].isalpha(): 
         # 简单根音（A, B, C, D, E, F, G）
         root_name = chord_label[0]
@@ -48,24 +49,20 @@ def parse_simplified_chord(chord_label: str) -> Tuple[str, str]:
     else:
         return 'C', 'Maj' # 无法识别时默认返回 C Maj
 
-    # 查找匹配的和弦类型
-    if not remaining or remaining.lower() in ('maj', 'm'): # 例如 'C' 或 'Cmaj'
-        # 默认大三和弦，除非明确写 'm' 或 'min'
-        if 'm' in remaining.lower() or 'min' in remaining.lower():
-             chord_type = 'min'
-        else:
-             chord_type = 'Maj'
-    
-    elif remaining.startswith('m7'): chord_type = 'min7'
+    # 查找匹配的和弦类型 - 优先检查最长的后缀
+    if remaining.startswith('m7'): chord_type = 'min7'
     elif remaining.startswith('min7'): chord_type = 'min7'
-    elif remaining.startswith('7'): chord_type = 'Dom7'
     elif remaining.startswith('maj7'): chord_type = 'Maj7'
-    elif remaining.startswith('m'): chord_type = 'min'
-    elif remaining.startswith('min'): chord_type = 'min'
     elif remaining.startswith('sus4'): chord_type = 'sus4'
     elif remaining.startswith('dim'): chord_type = 'dim'
     elif remaining.startswith('Maj6'): chord_type = 'Maj6'
     elif remaining.startswith('min6'): chord_type = 'min6'
+    elif remaining.startswith('7'): chord_type = 'Dom7' # 【修改】处理 '7' 后缀
+    elif remaining.startswith('m'): chord_type = 'min' # 【修改】处理 'm' 后缀
+    elif remaining.startswith('min'): chord_type = 'min'
+    elif not remaining: 
+        # 【修改】无后缀，默认为大三和弦
+        chord_type = 'Maj'
     else:
         # 无法识别的后缀，默认为大三和弦
         chord_type = 'Maj'
@@ -102,7 +99,6 @@ PATTERN_TEMPLATES: Dict[str, List[Tuple[float, int, float]]] = {
         (3.5, 3, 0.5), # 4 拍半：七音
     ],
     
-    # TODO: [B组填空] 添加 "March" 和 "Jazz Swing" 模板
     "March": [
         (0.0, 0, 0.5),  # 1 拍：根音 (强拍)
         (0.5, 1, 0.5),  # 弱拍：和弦音
