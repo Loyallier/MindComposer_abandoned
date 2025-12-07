@@ -1,2 +1,4 @@
 .vscode/
 src/__pycache__
+verify_model.py
+test_melodies.txt

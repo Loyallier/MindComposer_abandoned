@@ -1,138 +1,135 @@
 import torch
-import json
 import os
-import re
+import sys
 
-# 导入你的模型架构
+# ================= 动态导入处理 =================
+# 这样写是为了兼容两种运行方式：
+# 1. 在根目录运行 python interface.py (作为模块被引用)
+# 2. 在 src 目录运行 python inference.py (单独测试)
 try:
+    from src import config
+    from src import utils
     from src.model import Encoder, Decoder, Seq2Seq
 except ImportError:
-    from model import Encoder, Decoder, Seq2Seq # 备用：方便你直接在 src 目录下测试运行
+    # 如果找不到 src，说明可能是在 src 目录下直接运行的
+    import config
+    import utils
+    from model import Encoder, Decoder, Seq2Seq
 
 class AIComposer:
-    def __init__(self, 
-                 model_path=r'models\best_model.pth',     # 模型现在应该在这里
-                 vocab_path=r'data\processed\vocab.json'): # 字典在这里
+    def __init__(self):
         """
         初始化 AI 作曲家
-        1. 加载字典
-        2. 重建模型结构
-        3. 加载训练好的参数
+        所有路径和参数都直接从 config 读取，确保与训练时完全一致。
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"🤖 AI Composer 正在启动 (Device: {self.device})...")
+        print(f"🤖 AI Composer 正在初始化 (Device: {self.device})...")
 
-        # 1. 加载字典
-        if not os.path.exists(vocab_path):
-            raise FileNotFoundError(f"找不到字典文件: {vocab_path}")
-            
-        with open(vocab_path, 'r', encoding='utf-8') as f:
-            self.vocab = json.load(f)
-            
-        self.melody_stoi = self.vocab['melody'] # String to ID
-        self.harmony_itos = {v: k for k, v in self.vocab['harmony'].items()} # ID to String (反向查找)
+        # 1. 加载字典 (调用 utils 通用函数)
+        # config.VOCAB_PATH 统一管理路径
+        print(f"📖 正在加载字典: {config.VOCAB_PATH}")
+        self.vocab = utils.load_vocab(config.VOCAB_PATH)
         
-        # 2. 获取维度
+        self.melody_stoi = self.vocab['melody']
+        # 创建反向查找表: ID -> 和弦名
+        self.harmony_itos = {v: k for k, v in self.vocab['harmony'].items()}
+        
+        # 2. 构建模型架构
+        # 参数直接从 config 读取，避免手写出错
         input_dim = len(self.melody_stoi)
         output_dim = len(self.vocab['harmony'])
         
-        # 3. 初始化模型 (参数必须与 train.py 一致)
-        # 如果你训练时改了参数，这里也要改
-        ENC_EMB_DIM = 64
-        DEC_EMB_DIM = 64
-        HIDDEN_DIM = 128
-        DROPOUT = 0.5
-        
-        enc = Encoder(input_dim, ENC_EMB_DIM, HIDDEN_DIM, DROPOUT)
-        dec = Decoder(output_dim, DEC_EMB_DIM, HIDDEN_DIM, DROPOUT)
+        enc = Encoder(input_dim, config.ENC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
+        dec = Decoder(output_dim, config.DEC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
         
         self.model = Seq2Seq(enc, dec, self.device).to(self.device)
         
-        # 4. 加载权重
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"找不到模型文件: {model_path} (请先运行 train.py)")
+        # 3. 加载训练好的权重
+        if not os.path.exists(config.MODEL_SAVE_PATH):
+            raise FileNotFoundError(f"❌ 找不到模型文件: {config.MODEL_SAVE_PATH} (请检查 config.py 路径或先运行 train.py)")
             
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-        self.model.eval() # 切换到评估模式 (关闭 Dropout)
-        print("✅ 模型加载完毕，准备作曲！")
-
-    def clean_token(self, token):
-        """(内部工具) 清洗旋律输入，逻辑与训练时保持一致"""
-        token = str(token).strip()
-        if token in ["_", "0"]: return token
-        if token.isdigit(): return token
-        return "0" # 脏数据转休止符
+        print(f"⚖️ 正在加载模型权重: {config.MODEL_SAVE_PATH}")
+        self.model.load_state_dict(torch.load(config.MODEL_SAVE_PATH, map_location=self.device))
+        
+        # 切换到评估模式 (关闭 Dropout 等训练专用功能)
+        self.model.eval()
+        print("✅ AI Composer 准备就绪！")
 
     def predict(self, melody_list):
         """
-        【核心接口】给 B 组调用的函数
-        Input:  ['60', '62', '_', '64'] (旋律列表)
-        Output: ['C', 'C', 'C', 'G']    (和弦列表)
+        【核心接口】
+        Input:  ['60', '62', '_', '64']
+        Output: ['C', 'Dm', 'G7', 'C']
         """
-        # 1. 预处理 (清洗 + 转数字)
-        clean_seq = [self.clean_token(t) for t in melody_list]
+        # 👇【新增 Debug】看看传入了什么
+        print(f"👀 [Debug] 收到旋律输入: {melody_list}")
+
+        # 1. 清洗数据 (调用 utils，确保与训练逻辑一致)
+        # 哪怕 B 组传进来脏数据，这里也会自动清洗
+        clean_seq = [utils.clean_melody_token(t) for t in melody_list]
         
-        # 加上 <SOS> 和 <EOS>
-        sos_id = self.melody_stoi["<SOS>"]
-        eos_id = self.melody_stoi["<EOS>"]
+        # 👇【新增 Debug】看看清洗后剩下了什么
+        print(f"🧼 [Debug] 清洗后数据: {clean_seq}")
+
+        # 2. 转换为 Tensor (调用 utils)
+        # 自动加上 SOS, EOS 并处理 device
+        src_tensor, src_len = utils.token_to_tensor(clean_seq, self.melody_stoi, self.device)
         
-        # 查表转换 (遇到没见过的音符就用休止符代替，防止报错)
-        unk_id = self.melody_stoi.get("0", 3) 
-        input_ids = [sos_id] + [self.melody_stoi.get(t, unk_id) for t in clean_seq] + [eos_id]
+        # 3. 模型推理 (Inference)
+        predicted_chords = []
         
-        # 转为 Tensor 并增加 Batch 维度 [1, seq_len]
-        src_tensor = torch.LongTensor(input_ids).unsqueeze(0).to(self.device)
-        src_len = torch.LongTensor([len(input_ids)])
-        
-        # 2. 推理 (Inference)
-        with torch.no_grad(): # 不需要算梯度，节省内存
-            # 编码器 (Encoder)
+        with torch.no_grad(): # 这一步不需要算梯度，省显存
+            # A. 编码器 (Encoder) 理解旋律
             encoder_outputs, hidden, cell = self.model.encoder(src_tensor, src_len)
             
-            # 调整 hidden 格式适配 Decoder
+            # B. 调整 hidden 状态以适配 Decoder (拼接双向 LSTM 的状态)
             hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim=1).unsqueeze(0)
             cell = torch.cat((cell[-2,:,:], cell[-1,:,:]), dim=1).unsqueeze(0)
             
-            # 解码器 (Decoder) 逐步生成
-            # 第一步输入 <SOS>
-            trg_token = torch.tensor([self.vocab['harmony']["<SOS>"]], device=self.device)
+            # C. 解码器 (Decoder) 逐个生成和弦
+            # 起始信号 <SOS>
+            trg_token = torch.tensor([self.vocab['harmony'][config.SOS_TOKEN]], device=self.device)
             
-            predicted_chords = []
-            
-            # 循环生成的长度 = 旋律的长度
-            # 注意：我们要跳过 <SOS>，所以生成 len(clean_seq) 个
+            # 👇【新增 Debug】看看循环了多少次
+            print(f"🔄 [Debug] 准备生成 {len(clean_seq)} 个和弦...")
+
+            # 循环次数 = 旋律长度
             for _ in range(len(clean_seq)):
                 output, hidden, cell = self.model.decoder(trg_token, hidden, cell, encoder_outputs)
                 
                 # 取概率最大的那个 ID (Greedy Decode)
-                top1 = output.argmax(1) 
+                top1 = output.argmax(1)
                 
-                # 记录结果
-                chord_str = self.harmony_itos[top1.item()]
+                # 将 ID 转回字符串
+                chord_str = self.harmony_itos.get(top1.item(), config.UNK_TOKEN)
                 predicted_chords.append(chord_str)
                 
-                #把预测结果作为下一步的输入
+                # 当前的预测结果不仅是输出，也是下一步的输入
                 trg_token = top1
                 
+        # 👇【新增 Debug】看看最后生成了什么
+        print(f"🎹 [Debug] 最终生成和弦: {predicted_chords}")
         return predicted_chords
 
-# ================= 测试区域 =================
+# ================= 单元测试 =================
 if __name__ == "__main__":
-    # 模拟一段旋律 (Twinkle Twinkle Little Star: 1 1 5 5 6 6 5)
-    # 对应 MIDI: 60 60 67 67 69 69 67
-    test_melody = ['60', '60', '67', '67', '69', '69', '67', '_', '_', '0']
-    
+    # 这里是用来测试 inference.py 本身能不能跑通的
+    # 不会被 interface.py 调用
     try:
         composer = AIComposer()
-        chords = composer.predict(test_melody)
         
-        print("\n🎵 测试生成结果:")
-        print(f"旋律: {test_melody}")
-        print(f"和弦: {chords}")
+        # 测试用例: Twinkle Twinkle Little Star
+        test_melody = ['60', '60', '67', '67', '69', '69', '67', '0']
+        print(f"\n🎵 输入旋律: {test_melody}")
         
-        # 验证长度是否一致
-        assert len(test_melody) == len(chords)
-        print("✅ 长度对齐检查通过！")
+        result = composer.predict(test_melody)
+        print(f"🎹 生成和弦: {result}")
         
+        if len(result) == len(test_melody):
+            print("✅ 测试通过：长度对齐！")
+        else:
+            print("⚠️ 测试警告：长度不对齐！")
+            
     except Exception as e:
-        print(f"❌ 运行出错: {e}")
+        print(f"\n❌ 测试失败: {e}")
+        print("提示：请检查 config.py 里的路径是否正确，或者是否已经运行过 train.py 生成了模型。")

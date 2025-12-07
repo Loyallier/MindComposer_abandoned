@@ -10,6 +10,9 @@ import sys # 新增：用于优雅退出
 # 导入你自己写的模块
 from model import Encoder, Decoder, Seq2Seq
 from dataset import MusicDataset, collate_fn
+from utils import load_vocab
+
+import config
 
 # ================= 1. 配置区域 =================
 DATA_PATH = r"data\processed\dataset_encoded.json"
@@ -19,17 +22,17 @@ VOCAB_PATH = r"data\processed\vocab.json"
 MODEL_SAVE_PATH = r"models\best_model.pth"
 LAST_MODEL_PATH = r"models\checkpoints\last_checkpoint.pth" 
 
-# 超参数
-BATCH_SIZE = 32         # 切片后可以开大 Batch
-LEARNING_RATE = 0.001   
-N_EPOCHS = 100          
-CLIP = 1                
+# # 超参数
+# BATCH_SIZE = 32         # 切片后可以开大 Batch
+# LEARNING_RATE = 0.001   
+# N_EPOCHS = 100          
+# CLIP = 1                
 
-# 模型参数
-ENC_EMB_DIM = 64
-DEC_EMB_DIM = 64
-HIDDEN_DIM = 128
-DROPOUT = 0.5
+# # 模型参数
+# ENC_EMB_DIM = 64
+# DEC_EMB_DIM = 64
+# HIDDEN_DIM = 128
+# DROPOUT = 0.5
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -145,4 +148,4 @@ if __name__ == "__main__":
         torch.save(model.state_dict(), LAST_MODEL_PATH)
         print(f"💾 中断时的模型状态已保存至: {LAST_MODEL_PATH}")
         print("-" * 65)
-        print("👉 现在你可以运行 predict.py 了！")
+        print("👉 现在你可以运行 interface.py 了！")
