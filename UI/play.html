@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MELODY AI — Play</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; color: #e9f1ff; background: radial-gradient(1200px 800px at 20% 10%, #071330 0%, #0a1430 40%, #060c1c 100%); overflow: hidden; cursor: none; }
+      .stage { position: relative; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; align-items: start; justify-items: center; padding: 10vh 6vw; }
+      .title { text-align: center; margin-top: 2vh; z-index: 2; }
+      .title h1 { margin: 0; font-weight: 800; letter-spacing: 0.06em; font-size: clamp(36px, 6vw, 72px); line-height: 1.05; background: linear-gradient(90deg, #3cf2d4, #4cc3ff 40%, #bc42ff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 10px rgba(76,195,255,0.35)) drop-shadow(0 0 20px rgba(116,92,255,0.28)); }
+      .panel { width: clamp(340px, 54vw, 720px); padding: 28px 28px 60px; border-radius: 22px; background: linear-gradient(180deg, #10224a 0%, #0c1e3f 52%), radial-gradient(120% 90% at 0% 0%, rgba(84,255,232,0.12) 0%, rgba(225,123,255,0.12) 100%); background-blend-mode: screen; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 42px rgba(76,195,255,0.12); position: relative; z-index: 2; }
+      .ready { text-align: center; font-size: clamp(16px, 2.4vw, 22px); letter-spacing: 0.02em; color: #cfe6ff; opacity: 0.92; margin-bottom: 18px; }
+      
+      .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 42px; animation: none; position: relative; }
+      .flower { position: absolute; inset: 0; margin: auto; width: clamp(120px, 22vw, 240px); height: clamp(120px, 22vw, 240px); opacity: 0.65; pointer-events: none; z-index: 0; }
+      .flower .petal { fill: none; stroke: rgba(200, 225, 255, 0.25); stroke-width: 2.4; }
+      .actions .btn { position: relative; z-index: 1; }
+      .btn { height: 52px; border-radius: 16px; border: none; outline: none; cursor: none; font-weight: 700; letter-spacing: 0.12em; font-size: 16px; color: #d5e9ff; background: linear-gradient(180deg, #142440, #0f1d36); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(76, 195, 255, 0.16); display: flex; align-items: center; justify-content: center; gap: 10px; }
+      .btn.primary { background: linear-gradient(90deg, #4cc3ff, #bc42ff); box-shadow: inset 0 1px 0 rgba(255,255,255,0.10); }
+      .btn:disabled { opacity: 0.6; cursor: default; }
+      .icon { width: 16px; height: 16px; display: inline-block; }
+      .icon.play { border-left: 14px solid #ffffff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
+      .icon.pause { width: 14px; height: 14px; background: linear-gradient(90deg, #ffffff 0 45%, transparent 45% 55%, #ffffff 55% 100%); }
+      .waves { position: absolute; inset: 0; z-index: 0; opacity: 0.75; }
+      svg.waves { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <section class="title"><h1>MELODY AI</h1></section>
+      <section class="panel">
+        <div id="label" class="ready">Your melody is ready.</div>
+        
+        <div class="actions">
+          <svg class="flower" viewBox="-80 -80 160 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <g id="flowerGroup"></g>
+          </svg>
+          <button id="play" class="btn primary"><span id="playIcon" class="icon play"></span>Play</button>
+          <button id="exportAudio" class="btn">Download Audio</button>
+          <button id="exportScore" class="btn">Download Score</button>
+        </div>
+        <audio id="player" preload="auto" style="display:none"></audio>
+      </section>
+      <svg class="waves" viewBox="0 0 3600 1000" preserveAspectRatio="none" aria-hidden="true" shape-rendering="optimizeSpeed">
+        <defs id="grads"></defs>
+        <g id="waveGroup" fill="none" stroke-width="1.6" opacity="0.75" stroke-linecap="round"></g>
+      </svg>
+    </main>
+    <script>
+      const mode = (new URLSearchParams(location.search)).get('mode') || sessionStorage.getItem('mode') || 'melody';
+      const label = document.getElementById('label');
+      label.textContent = mode === 'chord' ? 'Your chords are ready.' : 'Your melody is ready.';
+      
+      const player = document.getElementById('player');
+      const playBtn = document.getElementById('play');
+      const playIcon = document.getElementById('playIcon');
+      const expA = document.getElementById('exportAudio');
+      const expS = document.getElementById('exportScore');
+      const flower = document.querySelector('svg.flower');
+      const flowerGroup = flower.querySelector('#flowerGroup');
+      (function buildFlower() {
+        const count = 12;
+        const r = 48;
+        const rc = 22;
+        for (let i = 0; i < count; i++) {
+          const a = (i / count) * Math.PI * 2;
+          const cx = Math.cos(a) * rc;
+          const cy = Math.sin(a) * rc;
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', cx);
+          c.setAttribute('cy', cy);
+          c.setAttribute('r', r);
+          c.setAttribute('class', 'petal');
+          flowerGroup.appendChild(c);
+        }
+      })();
+      const audioUrl = sessionStorage.getItem('resultAudioUrl') || sessionStorage.getItem('audioUrl') || sessionStorage.getItem('wavUrl') || '';
+      const scoreUrl = sessionStorage.getItem('resultScoreUrl') || sessionStorage.getItem('musicxmlUrl') || sessionStorage.getItem('midiUrl') || '';
+      if (audioUrl) { player.src = audioUrl; playBtn.disabled = false; expA.disabled = false; } else { playBtn.disabled = true; expA.disabled = true; }
+      if (scoreUrl) { expS.disabled = false; } else { expS.disabled = true; }
+      
+      playBtn.addEventListener('click', async () => { if (!audioUrl) return; if (player.paused) { await player.play(); playBtn.innerHTML = '<span id="playIcon" class="icon pause"></span>Pause'; } else { player.pause(); playBtn.innerHTML = '<span id="playIcon" class="icon play"></span>Play'; } });
+      expA.addEventListener('click', () => { if (!audioUrl) return; const a = document.createElement('a'); a.href = audioUrl; a.download = (sessionStorage.getItem('pendingName') || 'output') + (audioUrl.endsWith('.wav') ? '.wav' : (audioUrl.endsWith('.mp3') ? '.mp3' : '')); document.body.appendChild(a); a.click(); a.remove(); });
+      expS.addEventListener('click', () => { if (!scoreUrl) return; const a = document.createElement('a'); a.href = scoreUrl; a.download = (sessionStorage.getItem('pendingName') || 'score') + (scoreUrl.endsWith('.xml') ? '.musicxml' : (scoreUrl.endsWith('.mid') ? '.mid' : '')); document.body.appendChild(a); a.click(); a.remove(); });
+      const svg = document.querySelector('svg.waves');
+      const group = svg.querySelector('#waveGroup');
+      const defs = svg.querySelector('#grads');
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const width = 3600;
+      const FREQ = Math.PI * 6;
+      function makeBasis(segs) { const step = width / segs; const xs = []; const sinA = [], cosA = []; const sinA2 = [], cosA2 = []; const sinB = [], cosB = []; for (let x = step; x <= width; x += step) { const tn = x / width; xs.push(x); const a = tn * FREQ; sinA.push(Math.sin(a)); cosA.push(Math.cos(a)); const a2 = tn * FREQ * 2.2; sinA2.push(Math.sin(a2)); cosA2.push(Math.cos(a2)); const b = tn * 2.9; sinB.push(Math.sin(b)); cosB.push(Math.cos(b)); } return { xs, sinA, cosA, sinA2, cosA2, sinB, cosB }; }
+      const bases = { 120: makeBasis(120), 160: makeBasis(160), 220: makeBasis(220) };
+      group.setAttribute('transform', 'rotate(-30 1800 500)');
+      const lines = 56;
+      const spacing = 84;
+      const baseY = -760;
+      const paths = [];
+      for (let i = 0; i < lines; i++) { const p = document.createElementNS(svgNS, 'path'); const grad = document.createElementNS(svgNS, 'linearGradient'); grad.setAttribute('id', `grad${i}`); grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%'); grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '0%'); const colors = [ `hsl(${190 + i * 5}, 100%, 62%)`, `hsl(${220 + i * 5}, 100%, 60%)`, `hsl(${260 + i * 5}, 100%, 62%)`, `hsl(${300 + i * 5}, 100%, 66%)` ]; const offsets = ['0%', '35%', '70%', '100%']; for (let s = 0; s < colors.length; s++) { const stop = document.createElementNS(svgNS, 'stop'); stop.setAttribute('offset', offsets[s]); stop.setAttribute('stop-color', colors[s]); grad.appendChild(stop); } defs.appendChild(grad); p.setAttribute('stroke', `url(#grad${i})`); p.setAttribute('stroke-width', '2.0'); p.setAttribute('opacity', '0.60'); group.appendChild(p); paths.push(p); }
+      let t = 0; let lastFrameTime = performance.now(); let avgDt = 16;
+      function animate() { if (document.hidden) { requestAnimationFrame(animate); return; } const now = performance.now(); const dt = Math.max(8, now - lastFrameTime); lastFrameTime = now; avgDt = avgDt * 0.9 + dt * 0.1; const fps = 1000 / avgDt; t += 0.014; const ampWanted = spacing * 1.10 + spacing * 0.18 * Math.sin(t * 0.14); const amp = Math.min(spacing * 0.55, ampWanted); const segs = fps < 35 ? 120 : (fps < 50 ? 160 : 220); const basis = bases[segs]; const rippleScale = fps < 45 ? 0.12 : 0.18; const groupOffset = spacing * 0.085 * Math.sin(t * 0.46); const phase = t * 0.58; const sinPH = Math.sin(phase); const cosPH = Math.cos(phase); const sinPH11 = Math.sin(phase * 1.1); const cosPH11 = Math.cos(phase * 1.1); const sinPH06 = Math.sin(phase * 0.6); const cosPH06 = Math.cos(phase * 0.6); const ampLine = amp; for (let i = 0; i < lines; i++) { const y0 = baseY + i * spacing + groupOffset; paths[i].setAttribute('d', buildPath(y0, ampLine, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale)); } requestAnimationFrame(animate); }
+      function buildPath(y0, amp, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale) { const parts = []; parts.push(`M0,${y0 + amp * sinPH}`); for (let i = 0; i < basis.xs.length; i++) { const major = amp * (basis.sinA[i] * cosPH + basis.cosA[i] * sinPH); const sA2c = basis.sinA2[i] * cosPH11 + basis.cosA2[i] * sinPH11; const cBc = basis.cosB[i] * cosPH06 - basis.sinB[i] * sinPH06; const ripple = rippleScale * amp * sA2c * cBc; const y = y0 + major + ripple; parts.push(` L${basis.xs[i]},${y}`); } return parts.join(''); }
+      animate();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+2025-12-04 23:58:06,436 - [Pipeline] - INFO - >>> Stage 1: AI Prediction <<<
+2025-12-04 23:58:06,436 - [Group_A_AI] - INFO - 正在分析旋律: test_input.mid ...
+2025-12-04 23:58:07,437 - [Group_A_AI] - INFO - 模拟预测完成
+2025-12-04 23:58:07,439 - [Pipeline] - INFO - >>> Stage 2: Rule-based Generation <<<
+2025-12-04 23:58:07,440 - [Group_B_Logic] - INFO - 开始生成伴奏... 风格: Waltz
+2025-12-04 23:58:08,442 - [Group_B_Logic] - INFO - 模拟生成完毕: generated_outputs\result_1764863887_Waltz.mid
+2025-12-04 23:58:08,442 - [Pipeline] - INFO - 流程结束。输出: generated_outputs\result_1764863887_Waltz.mid

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MELODY AI — Generating</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #e9f1ff;
+        background: radial-gradient(1200px 800px at 20% 10%, #071330 0%, #0a1430 40%, #060c1c 100%);
+        overflow: hidden;
+        cursor: none;
+      }
+      .stage { position: relative; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; align-items: start; justify-items: center; padding: 10vh 6vw; }
+      .title { text-align: center; margin-top: 2vh; z-index: 2; }
+      .title h1 { margin: 0; font-weight: 800; letter-spacing: 0.06em; font-size: clamp(28px, 4.8vw, 56px); line-height: 1.20; padding-bottom: 0.12em; white-space: nowrap; }
+      .title h1.melody { background: linear-gradient(90deg, #7ccfff, #e17bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .title h1.chord { background: linear-gradient(90deg, #3cf2d4, #4cc3ff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 10px rgba(76,195,255,0.35)) drop-shadow(0 0 20px rgba(116,92,255,0.28)); text-shadow: 0 0 8px rgba(76,195,255,0.30), 0 0 18px rgba(116,92,255,0.22); }
+      canvas.scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <section class="title"><h1 id="title" class="chord">Generating chords...</h1></section>
+      <canvas class="scene" aria-hidden="true"></canvas>
+    </main>
+    <script>
+      const qp = new URLSearchParams(location.search);
+      const mode = qp.get('mode') === 'melody' ? 'melody' : 'chord';
+      const title = document.getElementById('title');
+      if (mode === 'chord') { title.textContent = 'Generating chords...'; title.className = 'chord'; } else { title.textContent = 'Generating melody...'; title.className = 'melody'; }
+      const palette = mode === 'chord'
+        ? { a: [60, 242, 212], b: [76, 195, 255], c: [180, 230, 255] }
+        : { a: [124, 207, 255], b: [225, 123, 255], c: [255, 240, 255] };
+      const noteRGB = [150, 195, 255];
+      const noteCol = `rgba(${noteRGB[0]},${noteRGB[1]},${noteRGB[2]},`;
+      const noteFill = `rgba(${noteRGB[0]},${noteRGB[1]},${noteRGB[2]},1)`;
+      const canvas = document.querySelector('canvas.scene');
+      const ctx = canvas.getContext('2d');
+      let dpr = Math.min(2, window.devicePixelRatio || 1);
+      let R = 0;
+      function resize() { const r = document.body.getBoundingClientRect(); canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); canvas.style.width = r.width + 'px'; canvas.style.height = r.height + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); R = Math.min(r.width, r.height) * 0.22; }
+      resize();
+      window.addEventListener('resize', resize, { passive: true });
+      const glyphs = ['\u266A','\u266B','\u2669','\u266F','\u266D','\u266E'];
+      const dots = [];
+      const sparks = [];
+      function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+      function rand(a, b) { return a + Math.random() * (b - a); }
+      function smoothstep(e0, e1, x) { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); }
+      function newDotBand(w, h, r0, r1) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = rand(r0, r1);
+        const x = w / 2 + Math.cos(ang) * dist;
+        const y = h / 2 + Math.sin(ang) * dist;
+        const tw = rand(0.6, 2.0);
+        const sp = rand(0.25, 0.75);
+        const col = noteCol;
+        const size = rand(0.8, 1.8) * (1.0 - dist / (R + 0.001)) + 0.6;
+        const vr = rand(0.008, 0.035);
+        const vx = rand(-12, 12);
+        const vy = rand(-12, 12);
+        const nph = rand(0, Math.PI * 2);
+        return { x, y, r: size, tw, sp, ang, dist, vr, vx, vy, nph, glyph: pick(glyphs), alpha: rand(0.65, 0.95), col };
+      }
+      function newDotAnywhere(w, h) { const x = Math.random() * w; const y = Math.random() * h; const dx = x - w / 2; const dy = y - h / 2; const dist = Math.sqrt(dx * dx + dy * dy); const tw = rand(0.6, 2.0); const sp = rand(0.25, 0.75); const col = noteCol; const size = rand(0.8, 1.8) * (1.0 - Math.min(1, dist / (R + 0.001))) + 0.6; const vr = rand(0.008, 0.035); const vx = rand(-12, 12); const vy = rand(-12, 12); const nph = rand(0, Math.PI * 2); const ringMin = R * 0.02; const ringMax = R * 0.66; const tang = Math.random() * Math.PI * 2; const tr = rand(ringMin, ringMax); const tx = w / 2 + Math.cos(tang) * tr; const ty = h / 2 + Math.sin(tang) * tr; const arrivalDelay = rand(0, 240); const arrivalDur = rand(450, 800); const bands = [ { r0: 0, r1: R * 0.25, w: 0.06 }, { r0: R * 0.25, r1: R * 0.50, w: 0.20 }, { r0: R * 0.50, r1: R * 0.75, w: 0.24 }, { r0: R * 0.75, r1: R * 1.00, w: 0.50 } ]; let u = Math.random(), acc = 0, idx = 0; for (let i = 0; i < bands.length; i++) { acc += bands[i].w; if (u <= acc) { idx = i; break; } } const pRing = 0.85; let targetR; let rb = false; if (Math.random() < pRing) { targetR = rand(ringMin, ringMax); rb = true; } else { targetR = rand(bands[idx].r0, bands[idx].r1); } return { x, y, r: size, tw, sp, ang: Math.random() * Math.PI * 2, dist, vr, vx, vy, nph, glyph: pick(glyphs), alpha: rand(0.65, 0.95), col, tx, ty, tr, tang, arrivalDelay, arrivalDur, arrived: false, targetR, rb }; }
+      function seed() {
+        dots.length = 0;
+        const rect = canvas.getBoundingClientRect(); const w = rect.width, h = rect.height;
+        const total = Math.max(320, Math.min(980, Math.round((w * h) / 9000)));
+        const bands = [
+          { r0: 0, r1: R * 0.25, weight: 0.06 },
+          { r0: R * 0.25, r1: R * 0.50, weight: 0.20 },
+          { r0: R * 0.50, r1: R * 0.75, weight: 0.24 },
+          { r0: R * 0.75, r1: R * 1.00, weight: 0.50 }
+        ];
+        for (let b = 0; b < bands.length; b++) {
+          const count = Math.round(total * bands[b].weight);
+          for (let i = 0; i < count; i++) dots.push(newDotBand(w, h, bands[b].r0, bands[b].r1));
+        }
+      }
+      function seedConverge() { dots.length = 0; const rect = canvas.getBoundingClientRect(); const w = rect.width, h = rect.height; const total = Math.max(320, Math.min(980, Math.round((w * h) / 9000))); for (let i = 0; i < total; i++) dots.push(newDotAnywhere(w, h)); }
+      function seedSphere() { dots.length = 0; const rect = canvas.getBoundingClientRect(); const w = rect.width, h = rect.height; const total = Math.max(1000, Math.min(2200, Math.round((w * h) / 6500))); const RS = Math.min(w, h) * 0.18; const minD = RS * 0.035; const minD2 = minD * minD; for (let i = 0; i < total; i++) { let ok = false, tries = 0, rx = 0, ry = 0, rz = 0; while (!ok && tries < 6) { const u = Math.random(); const v = Math.random(); const th = u * Math.PI * 2; const z = v * 2 - 1; const r0 = Math.sqrt(Math.max(0, 1 - z * z)); const x = r0 * Math.cos(th); const y = r0 * Math.sin(th); const shell = Math.cbrt(Math.random()) * RS; rx = x * shell; ry = y * shell; rz = z * shell; ok = true; const start = Math.max(0, dots.length - 500); for (let j = start; j < dots.length; j++) { const dx = dots[j].sx - rx; const dy = dots[j].sy - ry; const dz = dots[j].sz - rz; if (dx*dx + dy*dy + dz*dz < minD2) { ok = false; break; } } tries++; } const tw = rand(0.6, 2.0); const sp = rand(0.25, 0.75); const col = noteCol; const size = rand(0.8, 1.8); const spin = rand(-0.6, 0.6); const nph = rand(0, Math.PI * 2); dots.push({ sx: rx, sy: ry, sz: rz, r: size, tw, sp, spin, nph, glyph: pick(glyphs), alpha: rand(0.65, 0.95), col, state: 'normal', fade: 0 }); } }
+      function makeInside(RS) { const minD = RS * 0.030; const minD2 = minD * minD; let rx = 0, ry = 0, rz = 0; let ok = false, tries = 0; while (!ok && tries < 6) { const u = Math.random(); const v = Math.random(); const th = u * Math.PI * 2; const z = v * 2 - 1; const r0 = Math.sqrt(Math.max(0, 1 - z * z)); const x = r0 * Math.cos(th); const y = r0 * Math.sin(th); const shell = Math.pow(Math.random(), 0.85) * RS * 0.75; rx = x * shell; ry = y * shell; rz = z * shell; ok = true; const start = Math.max(0, dots.length - 500); for (let j = start; j < dots.length; j++) { const dx = dots[j].sx - rx; const dy = dots[j].sy - ry; const dz = dots[j].sz - rz; if (dx*dx + dy*dy + dz*dz < minD2) { ok = false; break; } } tries++; } const tw = rand(0.6, 2.0); const sp = rand(0.25, 0.75); const col = noteCol; const size = rand(0.8, 1.8); const spin = rand(-0.6, 0.6); const nph = rand(0, Math.PI * 2); return { sx: rx, sy: ry, sz: rz, r: size, tw, sp, spin, nph, glyph: pick(glyphs), alpha: rand(0.65, 0.95), col, state: 'normal', fade: 0 } }
+      seedSphere();
+      function seedSparks() { sparks.length = 0; const rect = canvas.getBoundingClientRect(); const w = rect.width, h = rect.height; const RS = Math.min(w, h) * 0.18; const total = Math.max(400, Math.min(1200, Math.round((w * h) / 9000))); for (let i = 0; i < total; i++) { const u = Math.random(); const v = Math.random(); const th = u * Math.PI * 2; const z = v * 2 - 1; const r0 = Math.sqrt(Math.max(0, 1 - z * z)); const x = r0 * Math.cos(th); const y = r0 * Math.sin(th); const shell = Math.pow(Math.random(), 0.85) * RS * 0.95; const sx = x * shell; const sy = y * shell; const sz = z * shell; const size = rand(0.5, 1.3); const spin = rand(-0.8, 0.8); const tw = rand(0.6, 2.2); const nph = rand(0, Math.PI * 2); sparks.push({ sx, sy, sz, r: size, tw, spin, nph, alpha: rand(0.45, 0.95), col: noteCol }); } }
+      seedSparks();
+      function drawGlow(x, y, sz, color) { const g = ctx.createRadialGradient(x, y, 0, x, y, sz); g.addColorStop(0.0, color + '0.85)'); g.addColorStop(0.35, color + '0.40)'); g.addColorStop(1.0, color + '0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, sz, 0, Math.PI * 2); ctx.fill(); const w = sz * 0.42; const g2 = ctx.createRadialGradient(x, y, 0, x, y, w); g2.addColorStop(0.0, 'rgba(255,255,255,0.85)'); g2.addColorStop(1.0, 'rgba(255,255,255,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x, y, w, 0, Math.PI * 2); ctx.fill(); }
+      let t0 = performance.now(); let c0 = performance.now();
+      function step() { const now = performance.now(); const dt = Math.max(16, now - t0); t0 = now; const dtSec = dt * 0.001; const w = canvas.width / dpr; const h = canvas.height / dpr; const cx = w / 2; const cy = h / 2; ctx.clearRect(0, 0, w, h); ctx.save(); ctx.globalCompositeOperation = 'screen'; const RS = Math.min(w, h) * 0.18; const ageSec = (now - c0) * 0.001; const ramp = Math.max(0, Math.min(1, (ageSec - 3.0) / 6.0)); const ejMax = Math.round(12 + 48 * ramp); const baseRate = 0.15 + 0.35 * ramp; let ej = 0; for (let i = 0; i < dots.length; i++) { if (dots[i].state === 'eject') ej++; } for (let i = 0; i < dots.length; i++) { const d = dots[i]; const rad = Math.sqrt(d.sx*d.sx + d.sy*d.sy + d.sz*d.sz); if (d.state !== 'eject' && rad > RS * 0.90 && ej < ejMax) { const p = Math.max(0, Math.min(1, (rad/RS - 0.90) * 6.0)); if (Math.random() < p * dtSec * baseRate) { d.state = 'eject'; d.exx = d.sx / (rad + 1e-4); d.exy = d.sy / (rad + 1e-4); d.exz = d.sz / (rad + 1e-4); d.ev = RS * (0.06 + Math.random() * 0.08); d.fade = 0; ej++; } } if (d.state === 'eject') { d.fade = Math.min(1, d.fade + dtSec * 0.45); const swirl = RS * 0.008; const ang = now * 0.0014 * d.tw + d.nph; d.sx += d.exx * d.ev * dtSec + swirl * Math.cos(ang) * dtSec; d.sy += d.exy * d.ev * dtSec + swirl * Math.sin(ang) * dtSec; d.sz += d.exz * d.ev * dtSec; const r2 = Math.sqrt(d.sx*d.sx + d.sy*d.sy + d.sz*d.sz); if (r2 > RS * 1.25 || d.fade >= 1) { const nd = makeInside(RS); d.sx = nd.sx; d.sy = nd.sy; d.sz = nd.sz; d.r = nd.r; d.tw = nd.tw; d.sp = nd.sp; d.spin = nd.spin; d.nph = nd.nph; d.glyph = nd.glyph; d.alpha = nd.alpha; d.col = nd.col; d.state = nd.state; d.fade = nd.fade; d.exx = 0; d.exy = 0; d.exz = 0; d.ev = 0; } } }
+        const rotY = now * 0.00035; const rotX = now * 0.00018; const f = RS * 1.8; const parr = []; for (let i = 0; i < sparks.length; i++) { const p = sparks[i]; const cY = Math.cos(rotY + p.spin * 0.5); const sY = Math.sin(rotY + p.spin * 0.5); const x1 = p.sx * cY + p.sz * sY; const z1 = -p.sx * sY + p.sz * cY; const cX = Math.cos(rotX + p.spin * 0.25); const sX = Math.sin(rotX + p.spin * 0.25); const y2 = p.sy * cX - z1 * sX; const z2 = p.sy * sX + z1 * cX; const x2 = x1; const proj = f / (f - z2); const px = cx + x2 * proj; const py = cy + y2 * proj; const twinkle = 0.70 + 0.30 * Math.sin(now * 0.0018 * p.tw + p.nph); const near = Math.max(0, Math.min(1, (z2 + RS) / (2 * RS))); const alpha = Math.max(0.04, Math.min(0.85, p.alpha * (0.25 + 0.65 * near) * twinkle)); const glowSz = p.r * 2.5 * (0.55 + 0.45 * near); parr.push({ px, py, alpha, glowSz, col: p.col, z: z2 }); } parr.sort((a, b) => a.z - b.z); for (let i = 0; i < parr.length; i++) { const a = parr[i]; ctx.globalAlpha = a.alpha; drawGlow(a.px, a.py, a.glowSz, a.col); }
+        const arr = []; for (let i = 0; i < dots.length; i++) { const d = dots[i]; const cY = Math.cos(rotY + d.spin * 0.5); const sY = Math.sin(rotY + d.spin * 0.5); const x1 = d.sx * cY + d.sz * sY; const z1 = -d.sx * sY + d.sz * cY; const cX = Math.cos(rotX + d.spin * 0.25); const sX = Math.sin(rotX + d.spin * 0.25); const y2 = d.sy * cX - z1 * sX; const z2 = d.sy * sX + z1 * cX; const x2 = x1; const proj = f / (f - z2); const px = cx + x2 * proj; const py = cy + y2 * proj; const twinkle = 0.85 + 0.15 * Math.sin(now * 0.0016 * d.tw + i * 0.03); const near = Math.max(0, Math.min(1, (z2 + RS) / (2 * RS))); let alpha = Math.max(0.06, Math.min(1.0, d.alpha * (0.30 + 0.55 * near) * twinkle)); if (d.state === 'eject') alpha *= (1 - d.fade); const glowSz = d.r * 3.2 * (0.65 + 0.55 * near); const fontSz = Math.round(10 + d.r * 6 * (0.55 + 0.65 * near)); arr.push({ px, py, near, alpha, glowSz, fontSz, glyph: d.glyph, col: d.col, z: z2 }); } arr.sort((a, b) => a.z - b.z); for (let i = 0; i < arr.length; i++) { const a = arr[i]; ctx.globalAlpha = a.alpha; drawGlow(a.px, a.py, a.glowSz, a.col); ctx.fillStyle = noteFill; ctx.font = `${a.fontSz}px \"Noto Music\", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(a.glyph, a.px, a.py); } ctx.restore(); requestAnimationFrame(step); }
+      step();
+      function autoForward() {
+        const ok = sessionStorage.getItem('resultReady') === '1' || sessionStorage.getItem('resultAudioUrl') || sessionStorage.getItem('audioUrl') || sessionStorage.getItem('wavUrl') || sessionStorage.getItem('musicxmlUrl') || sessionStorage.getItem('midiUrl') || sessionStorage.getItem('resultScoreUrl');
+        if (ok) { window.location.href = `play.html?mode=${mode}`; } else { setTimeout(autoForward, 800); }
+      }
+      setTimeout(autoForward, 800);
+    </script>
+  </body>
+</html>
