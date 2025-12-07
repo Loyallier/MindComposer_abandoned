@@ -34,48 +34,45 @@ logging.basicConfig(
 VALID_STYLES = ["Pop Ballad", "Waltz", "March", "Jazz Swing"]
 
 # ==========================================
-# 1. Group A: AI 预测模块 (The Brain)
+# Group A Section
 # ==========================================
-def predict_harmony(melody_midi_path: str) -> List[str]:
+
+# 1. 定义一个私有变量，用来存模型实例，防止每次点击都重新加载
+# (把它放在函数外面，这样全组都能看到 A 组有个全局模型变量，但不影响别人)
+_group_a_model = None 
+
+def predict_harmony(melody_list):
     """
-    [A组 核心任务]
-    输入: 用户的旋律 MIDI 文件路径
-    输出: 一个与时间对齐的和弦标签列表 (16分音符切片)
-    
-    格式示例: ['C', '_', '_', '_', 'G7', '_', '_', '_', ...]
-    ('_' 代表延音 HOLD)
+    【A组任务】根据旋律预测和弦
     """
-    logger = logging.getLogger("Group_A_AI")
-    logger.info(f"正在分析旋律: {melody_midi_path} ...")
+    global _group_a_model # 声明我们要使用上面那个全局变量
 
-    if USE_MOCK_MODELS:
-        # --- Mock 模式 (模拟 AI) ---
-        time.sleep(1) # 假装在推理
-        logger.info("模拟预测完成")
-        
-        # 返回一个假的 4 小节和弦序列 (假设 4/4 拍, 每小节 16 个切片)
-        # C大调 -> G大调 -> A小调 -> F大调
-        mock_seq =  ['C'] + ['_'] * 15 + \
-                    ['G'] + ['_'] * 15 + \
-                    ['Am'] + ['_'] * 15 + \
-                    ['F'] + ['_'] * 15
-        return mock_seq
+    # Step 1: 懒加载 (Lazy Import & Init)
+    # 只有第一次运行这个函数时，才会去 import 和加载模型
+    # 这样不会污染文件顶部的 import 区域，也不会拖慢程序启动速度
+    if _group_a_model is None:
+        try:
+            print("⏳ [Group A] 正在唤醒 AI 模型...")
+            # 动态导入，避免在文件头引入 src 包依赖
+            from src.inference import AIComposer 
+            _group_a_model = AIComposer()
+            print("✅ [Group A] 模型就绪。")
+        except Exception as e:
+            print(f"❌ [Group A] 模型加载失败: {e}")
+            return [] # 出错返回空列表，保证系统不崩
 
-    else:
-        # --- Real 模式 (真实 AI) ---
-        # TODO: [A组填空]
-        # 1. 加载 pytorch 模型 (建议在函数外预加载，避免每次调用都加载)
-        # 2. 使用 music21 或 pretty_midi 读取 midi_path
-        # 3. 将旋律切片化 (Quantization step=0.25)
-        # 4. 喂给模型预测
-        # 5. 将预测的数字 ID 转回和弦文本 (vocab decode)
+    # Step 2: 执行预测
+    try:
+        if not melody_list:
+            return []
         
-        # from src.inference import ChordPredictor
-        # predictor = ChordPredictor("models/best_checkpoint.pt")
-        # return predictor.predict(melody_midi_path)
+        # 调用 A 组核心逻辑
+        return _group_a_model.predict(melody_list)
         
-        raise NotImplementedError("A组模型尚未接入！请检查 USE_MOCK_MODELS 开关。")
-
+    except Exception as e:
+        print(f"❌ [Group A] 预测出错: {e}")
+        return []
+        
 # ==========================================
 # 2. Group B: 逻辑生成模块 (The Hands)
 # ==========================================
