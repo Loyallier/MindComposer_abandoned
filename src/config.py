@@ -32,3 +32,6 @@ PAD_TOKEN = "<PAD>"
 SOS_TOKEN = "<SOS>"
 EOS_TOKEN = "<EOS>"
 UNK_TOKEN = "0"
+
+# ================= 5. 其他配置 =================
+temperature=1.0

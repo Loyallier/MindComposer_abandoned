@@ -5,46 +5,21 @@ from torch.utils.data import DataLoader
 import json
 import os
 import time
-import sys # 新增：用于优雅退出
+import sys 
 
-# 导入你自己写的模块
-from model import Encoder, Decoder, Seq2Seq
-from dataset import MusicDataset, collate_fn
-from utils import load_vocab
+# 导入配置和模块
+try:
+    from src import config
+    from src.model import Encoder, Decoder, Seq2Seq
+    from src.dataset import MusicDataset, collate_fn
+    from src.utils import load_vocab
+except ImportError:
+    import config
+    from model import Encoder, Decoder, Seq2Seq
+    from dataset import MusicDataset, collate_fn
+    from utils import load_vocab
 
-import config
-
-# ================= 1. 配置区域 =================
-DATA_PATH = r"data\processed\dataset_encoded.json"
-VOCAB_PATH = r"data\processed\vocab.json"
-
-# 保存两个模型：一个是 Loss 最低的(Best)，一个是最后时刻的(Last)
-MODEL_SAVE_PATH = r"models\best_model.pth"
-LAST_MODEL_PATH = r"models\checkpoints\last_checkpoint.pth" 
-
-# # 超参数
-# BATCH_SIZE = 32         # 切片后可以开大 Batch
-# LEARNING_RATE = 0.001   
-# N_EPOCHS = 100          
-# CLIP = 1                
-
-# # 模型参数
-# ENC_EMB_DIM = 64
-# DEC_EMB_DIM = 64
-# HIDDEN_DIM = 128
-# DROPOUT = 0.5
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# ================= 2. 辅助函数 =================
-def load_vocab_dims(vocab_path):
-    with open(vocab_path, 'r', encoding='utf-8') as f:
-        vocab = json.load(f)
-        input_dim = len(vocab['melody'])
-        output_dim = len(vocab['harmony'])
-        print(f"📖 字典加载成功 | 旋律词表: {input_dim}, 和弦词表: {output_dim}")
-        return input_dim, output_dim
-
+# ================= 辅助函数 =================
 def init_weights(m):
     for name, param in m.named_parameters():
         if 'weight' in name:
@@ -62,6 +37,7 @@ def train(model, iterator, optimizer, criterion, clip):
         optimizer.zero_grad()
         output = model(src, trg, lengths)
         
+        # output: [batch_size, trg_len, output_dim]
         output_dim = output.shape[-1]
         output = output[:, 1:].reshape(-1, output_dim)
         trg = trg[:, 1:].reshape(-1)
@@ -74,78 +50,93 @@ def train(model, iterator, optimizer, criterion, clip):
         
     return epoch_loss / len(iterator)
 
-# ================= 3. 主程序 =================
+# ================= 主程序 =================
 if __name__ == "__main__":
-    # 清空缓存
+    # 0. 准备设备
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-
+        torch.cuda.empty_cache() # 清理显存
     print(f"🚀 正在使用设备: {device}")
     
-    if not os.path.exists(VOCAB_PATH):
-        print(f"❌ 错误：找不到文件 {VOCAB_PATH}")
-        sys.exit(1)
-        
-    INPUT_DIM, OUTPUT_DIM = load_vocab_dims(VOCAB_PATH)
+    # 1. 加载字典 (使用 config 里的路径)
+    vocab = load_vocab(config.VOCAB_PATH)
+    harmony_stoi = vocab['harmony']
+    INPUT_DIM = len(vocab['melody'])
+    OUTPUT_DIM = len(harmony_stoi)
 
-    print("📦正在加载数据...")
-    dataset = MusicDataset(DATA_PATH)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, shuffle=True)
+    print("📦 正在加载数据...")
+    # 👇 修改点：使用 config.DATASET_PATH
+    dataset = MusicDataset(config.DATASET_PATH)
+    # 👇 修改点：使用 config.BATCH_SIZE
+    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, collate_fn=collate_fn, shuffle=True)
     print(f"✅ 数据加载完毕，共 {len(dataset)} 条训练切片")
-
-    enc = Encoder(INPUT_DIM, ENC_EMB_DIM, HIDDEN_DIM, DROPOUT)
-    dec = Decoder(OUTPUT_DIM, DEC_EMB_DIM, HIDDEN_DIM, DROPOUT)
+    
+    # 2. 初始化模型 (使用 config 里的参数)
+    enc = Encoder(INPUT_DIM, config.ENC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
+    dec = Decoder(OUTPUT_DIM, config.DEC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
     model = Seq2Seq(enc, dec, device).to(device)
     model.apply(init_weights)
-    print("🧠 模型初始化完成")
 
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    criterion = nn.CrossEntropyLoss(ignore_index=0)
+    # 👇 修改点：使用 config.LEARNING_RATE
+    optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
 
-    print("\n🔥 开始训练！(随时按 Ctrl+C 安全停止)")
+    # ==========================================
+    # 🌟【核心】防止 AI 偷懒的权重设置 (你之前漏了这段)
+    # ==========================================
+    print("⚖️ 正在配置损失函数权重...")
+    loss_weights = torch.ones(OUTPUT_DIM).to(device)
+    
+    # 降低 "_" (HOLD) 的权重，逼迫模型去猜和弦变化
+    hold_id = harmony_stoi.get("_")
+    if hold_id is not None:
+        loss_weights[hold_id] = 0.025 
+        print(f"   -> 已降低 '_' (ID: {hold_id}) 的权重，防止模型偷懒。")
+    
+    # 将权重传给 CrossEntropyLoss
+    criterion = nn.CrossEntropyLoss(ignore_index=0, weight=loss_weights)
+    # ==========================================
+
+    print(f"\n🔥 开始训练！(目标轮数: {config.N_EPOCHS})")
     print("-" * 65)
     print(f"{'Epoch':<10} | {'Time':<10} | {'Loss':<10} | {'Status'}")
     print("-" * 65)
     
     best_loss = float('inf')
     
-    # 🛡️【关键修改】这里加了 try...except 块
+    # 定义备用模型保存路径 (基于 config.MODEL_DIR)
+    last_model_path = os.path.join(config.MODEL_DIR, 'last_checkpoint.pth')
+
     try:
-        for epoch in range(N_EPOCHS):
+        # 👇 修改点：使用 config.N_EPOCHS
+        for epoch in range(config.N_EPOCHS):
             start_time = time.time()
             
-            train_loss = train(model, dataloader, optimizer, criterion, CLIP)
+            # 👇 修改点：使用 config.CLIP
+            train_loss = train(model, dataloader, optimizer, criterion, config.CLIP)
             
             end_time = time.time()
             epoch_mins, epoch_secs = divmod(end_time - start_time, 60)
             
             save_msg = ""
-            # 如果是历史最佳，保存 best_model
             if train_loss < best_loss:
                 best_loss = train_loss
-                torch.save(model.state_dict(), MODEL_SAVE_PATH)
+                # 确保目录存在
+                os.makedirs(os.path.dirname(config.MODEL_SAVE_PATH), exist_ok=True)
+                torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
                 save_msg = "💾 Best Saved"
                 
             print(f"{epoch+1:<10} | {int(epoch_mins)}m {int(epoch_secs)}s    | {train_loss:.4f}     | {save_msg}")
 
     except KeyboardInterrupt:
-        print("\n" + "=" * 65)
-        print("🛑 检测到用户中断 (Ctrl+C)！正在进行安全退出处理...")
-        print("=" * 65)
+        print("\n🛑 用户中断训练。")
         
     finally:
-        # 无论正常结束还是强行打断，这里都会执行
         print("\n📊 训练总结:")
-        
-        # 1. 确认最佳模型是否存在
-        if os.path.exists(MODEL_SAVE_PATH):
-            print(f"✅ 历史最佳模型已安全保存至: {MODEL_SAVE_PATH} (Loss: {best_loss:.4f})")
+        if os.path.exists(config.MODEL_SAVE_PATH):
+            print(f"✅ 最佳模型: {config.MODEL_SAVE_PATH} (Loss: {best_loss:.4f})")
         else:
-            print(f"⚠️  尚未产生最佳模型 (Loss 尚未下降)。")
+            print("⚠️ 未保存最佳模型。")
 
-        # 2. 保存最后时刻的模型 (Checkpoint)
-        # 有时候"最佳 Loss"的模型可能有点过拟合，保留"最后时刻"的模型作为备选很有用
-        torch.save(model.state_dict(), LAST_MODEL_PATH)
-        print(f"💾 中断时的模型状态已保存至: {LAST_MODEL_PATH}")
-        print("-" * 65)
-        print("👉 现在你可以运行 interface.py 了！")
+        # 保存最后的中断点
+        torch.save(model.state_dict(), last_model_path)
+        print(f"💾 最后状态已保存至: {last_model_path}")
