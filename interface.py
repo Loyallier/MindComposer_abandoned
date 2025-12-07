@@ -5,7 +5,7 @@ import shutil
 from typing import List, Dict, Any, Union
 # 【新增】导入 music21 和 B 组生成逻辑
 import music21 as m21
-from src.decision_logic_B import render_accompaniment_from_raw_inputs # 导入 B 组主入口函数
+from decision_logic_B import render_accompaniment_from_raw_inputs # 导入 B 组主入口函数
 
 # ==========================================
 # 0. 全局配置 (Global Configuration)
