@@ -4,158 +4,143 @@ import re
 
 # ================= 配置区域 =================
 INPUT_FILE = r"data\interim\training_data_aligned.txt"
+# 建议输出到 processed 文件夹，保持整洁
 OUTPUT_VOCAB = r"data\processed\vocab.json"
 OUTPUT_DATA = r"data\processed\dataset_encoded.json"
 
-# 特殊 Token 定义 (ID固定)
+
+# 【新增】切片配置
+CHUNK_SIZE = 256  # 窗口大小：256个16分音符 (约16小节)
+MIN_LEN = 32      # 最小长度：太短的碎片丢弃
+
+# 特殊 Token 定义
 PAD_TOKEN = "<PAD>" # ID 0
 SOS_TOKEN = "<SOS>" # ID 1
 EOS_TOKEN = "<EOS>" # ID 2
 SPECIAL_TOKENS = [PAD_TOKEN, SOS_TOKEN, EOS_TOKEN]
 
-# 异名同音映射表 (统一转为 # 号)
+# 异名同音映射表
 ENHARMONIC_MAP = {
     "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#",
     "Cb": "B",  "E#": "F",  "B#": "C",  "Fb": "E"
 }
 
 def clean_melody_token(token):
-    """
-    清洗旋律 Token:
-    1. 必须是数字 (MIDI) 或 "_" 或 "0"
-    2. 如果是奇怪的字符，强制转为 "0" (休止符)，保持节拍对齐
-    """
+    """清洗旋律: 非数字强制转为休止符 0"""
     token = token.strip()
-    if token in ["_", "0"]:
-        return token
-    
-    # 尝试判断是否为数字
-    if token.isdigit():
-        return token
-    
-    # 如果是其他脏数据（比如 abc 里的 'z', '>', '|' 残留），转为休止
+    if token in ["_", "0"]: return token
+    if token.isdigit(): return token
     return "0"
 
 def simplify_chord(chord_str):
-    """
-    【核心逻辑】和弦归一化
-    将任意复杂和弦映射到: Root + (m) + (7) 或 _ 或 0
-    """
+    """清洗和弦: 归一化为 Root + m/7"""
     chord_str = chord_str.strip()
-    
-    # 1. 处理特殊标记
     if chord_str in ["_", "0", "N.C.", "rest"]:
         if chord_str == "rest": return "0"
         return chord_str
     
-    # 2. 预处理：去除转位 (Slash Chords) -> 取 '/' 前面的部分
-    if "/" in chord_str:
-        chord_str = chord_str.split("/")[0]
-        
-    # 3. 正则解析：分离 根音(Root) 和 后缀(Suffix)
-    # 匹配: 大写字母A-G + 可选的#或b + 剩余所有字符
-    match = re.match(r"^([A-G][#b]?)(.*)$", chord_str)
+    # 去除转位
+    if "/" in chord_str: chord_str = chord_str.split("/")[0]
     
-    if not match:
-        # 无法识别的格式，视为无和弦
-        return "0"
-        
+    # 正则解析
+    match = re.match(r"^([A-G][#b]?)(.*)$", chord_str)
+    if not match: return "0"
+    
     root = match.group(1)
     raw_suffix = match.group(2)
     
-    # 4. 异名同音转换 (Eb -> D#)
-    if root in ENHARMONIC_MAP:
-        root = ENHARMONIC_MAP[root]
-        
-    # 5. 后缀归类 (Mapping Logic)
+    # 异名同音处理
+    if root in ENHARMONIC_MAP: root = ENHARMONIC_MAP[root]
+    
+    # 后缀归类
     final_suffix = ""
+    if 'm' in raw_suffix and 'maj' not in raw_suffix: final_suffix = "m"
+    elif '7' in raw_suffix and 'maj' not in raw_suffix: final_suffix = "7"
+    else: final_suffix = "" # 其他都归为大三和弦
     
-    # 优先级 1: 小调 (m)
-    # 只要包含 'm' 且不包含 'maj' (排除 maj7)，就是小三和弦
-    # 兼容: m, min, m7, m9, m11 -> m
-    if 'm' in raw_suffix and 'maj' not in raw_suffix:
-        final_suffix = "m"
-        
-    # 优先级 2: 属七 (7)
-    # 包含 '7' 且没有 'maj' 且已经被排除掉 'm' -> 属七
-    # 兼容: 7, 7sus4, 9, 13 (通常 9 和 13 包含 7 的功能，这里简化为 7 或 大三)
-    # 为了保险，我们只认明确写了 7 的
-    elif '7' in raw_suffix and 'maj' not in raw_suffix:
-        final_suffix = "7"
-    
-    # 优先级 3: 其他统统归为 大三和弦 (无后缀)
-    # 兼容: maj7, sus4, add9, 6, dim, aug (简化处理)
-    else:
-        final_suffix = ""
-        
     return root + final_suffix
+
+def slice_sequence(m_seq, h_seq, chunk_size, min_len):
+    """
+    【新增核心函数】重叠切片
+    将长歌切分为多个 chunk_size 的片段，步长为 chunk_size // 2
+    """
+    slices = []
+    total_len = len(m_seq)
+    
+    # 步长设为窗口的一半 (50% Overlap)，增加数据连贯性
+    stride = chunk_size // 2  
+    
+    # 如果歌本身很短，直接返回（或者丢弃）
+    if total_len <= chunk_size:
+        if total_len >= min_len:
+            slices.append((m_seq, h_seq))
+        return slices
+
+    # 滑动窗口切分
+    for i in range(0, total_len, stride):
+        m_chunk = m_seq[i : i + chunk_size]
+        h_chunk = h_seq[i : i + chunk_size]
+        
+        # 只有片段足够长才保留
+        if len(m_chunk) >= min_len:
+            slices.append((m_chunk, h_chunk))
+            
+    return slices
 
 def load_and_clean_data(file_path):
     print(f"正在读取并清洗 {file_path} ...")
     clean_pairs = []
     
     with open(file_path, "r", encoding="utf-8") as f:
-        for line_num, line in enumerate(f):
+        for line in f:
             line = line.strip()
-            if not line or "|" not in line:
-                continue
+            if not line or "|" not in line: continue
             
             parts = line.split("|")
             raw_m = parts[0].strip().split()
             raw_h = parts[1].strip().split()
             
-            # --- 步骤 1: 清洗 Token ---
+            # 1. 清洗
             clean_m = [clean_melody_token(t) for t in raw_m]
             clean_h = [simplify_chord(t) for t in raw_h]
             
-            # --- 步骤 2: 长度强制对齐 ---
-            # 取两者中最短的长度，截断多余的 (保证 1:1)
+            # 2. 强制对齐长度
             min_len = min(len(clean_m), len(clean_h))
-            
-            if min_len < 4: # 太短的片段丢弃
-                continue
-                
+            if min_len < MIN_LEN: continue
             final_m = clean_m[:min_len]
             final_h = clean_h[:min_len]
             
-            clean_pairs.append((final_m, final_h))
+            # 3. 【调用切片】
+            chunks = slice_sequence(final_m, final_h, CHUNK_SIZE, MIN_LEN)
+            clean_pairs.extend(chunks)
             
-    print(f"清洗完成: 保留了 {len(clean_pairs)} 条有效数据。")
+    print(f"处理完成: 生成了 {len(clean_pairs)} 条训练片段 (Max Len: {CHUNK_SIZE})")
     return clean_pairs
 
 def build_vocab(sequences, vocab_name):
-    """构建字典"""
     unique_tokens = set()
-    for seq in sequences:
-        unique_tokens.update(seq)
-    
+    for seq in sequences: unique_tokens.update(seq)
     sorted_tokens = sorted(list(unique_tokens))
     
-    # 特殊符放在前 0,1,2
     token_to_id = {t: i for i, t in enumerate(SPECIAL_TOKENS)}
     start_id = len(SPECIAL_TOKENS)
-    
     for i, token in enumerate(sorted_tokens):
         token_to_id[token] = start_id + i
         
-    print(f"[{vocab_name}] 字典大小: {len(token_to_id)} (含特殊符)")
+    print(f"[{vocab_name}] 字典大小: {len(token_to_id)}")
     return token_to_id
 
 def encode_sequence(seq, vocab):
-    """转数字: [SOS, id, id..., EOS]"""
-    # 如果遇到字典里没有的脏数据（理论上build_vocab已经覆盖，但为了保险），用 PAD(0) 或 忽略
-    # 这里直接映射，因为我们是用清洗后的数据建的字典
     return [vocab[SOS_TOKEN]] + [vocab[t] for t in seq] + [vocab[EOS_TOKEN]]
 
 def main():
-    # 1. 清洗数据
     if not os.path.exists(INPUT_FILE):
         print(f"错误: 找不到文件 {INPUT_FILE}")
         return
 
+    # 1. 加载、清洗、切片
     data_pairs = load_and_clean_data(INPUT_FILE)
-    
-    # 解压为两个列表
     m_seqs = [p[0] for p in data_pairs]
     h_seqs = [p[1] for p in data_pairs]
 
@@ -163,18 +148,15 @@ def main():
     melody_vocab = build_vocab(m_seqs, "Melody")
     harmony_vocab = build_vocab(h_seqs, "Harmony")
     
-    # 打印和弦列表供检查 (确认没有奇怪的和弦混进去)
-    print("\n--- 最终生成的和弦列表 (请检查是否只有标准格式) ---")
-    chord_list = [k for k, v in harmony_vocab.items() if k not in SPECIAL_TOKENS]
-    print(chord_list)
-    print("--------------------------------------------------\n")
+    # 确保输出目录存在
+    os.makedirs(os.path.dirname(OUTPUT_VOCAB), exist_ok=True)
 
     # 保存字典
     full_vocab = {"melody": melody_vocab, "harmony": harmony_vocab}
     with open(OUTPUT_VOCAB, "w", encoding="utf-8") as f:
         json.dump(full_vocab, f, indent=4)
 
-    # 3. 数字化并保存
+    # 3. 数字化
     encoded_dataset = []
     for idx, (m, h) in enumerate(zip(m_seqs, h_seqs)):
         m_ids = encode_sequence(m, melody_vocab)
@@ -190,7 +172,8 @@ def main():
     with open(OUTPUT_DATA, "w", encoding="utf-8") as f:
         json.dump(encoded_dataset, f)
         
-    print(f"✅ 处理完成！\n字典: {OUTPUT_VOCAB}\n数据: {OUTPUT_DATA}")
+    print(f"✅ 数字化完成！\n字典: {OUTPUT_VOCAB}\n数据: {OUTPUT_DATA}")
+    print("👉 现在可以去运行 train.py 了，记得把 BATCH_SIZE 改回 32 或 64！")
 
 if __name__ == "__main__":
     main()
