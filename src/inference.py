@@ -1,131 +1,161 @@
 import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+import random
+import numpy as np # 需要安装 numpy (pip install numpy)
 import os
-import sys
+import time
 
-# ================= 动态导入处理 =================
-# 兼容根目录运行(python interface.py) 和 src目录运行(python inference.py)
+# 导入配置和模块
 try:
     from src import config
-    from src import utils
     from src.model import Encoder, Decoder, Seq2Seq
+    from src.dataset import MusicDataset, collate_fn
+    from src.utils import load_vocab
 except ImportError:
     import config
-    import utils
     from model import Encoder, Decoder, Seq2Seq
+    from dataset import MusicDataset, collate_fn
+    from utils import load_vocab
 
-class AIComposer:
-    def __init__(self):
-        """
-        初始化 AI 作曲家
-        配置来源: src/config.py
-        工具来源: src/utils.py
-        """
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"🤖 AI Composer 正在初始化 (Device: {self.device})...")
+# ================= 工具函数 =================
 
-        # 1. 加载字典
-        print(f"📖 正在加载字典: {config.VOCAB_PATH}")
-        self.vocab = utils.load_vocab(config.VOCAB_PATH)
-        
-        self.melody_stoi = self.vocab['melody']
-        # 反向查找表: ID -> 和弦名
-        self.harmony_itos = {v: k for k, v in self.vocab['harmony'].items()}
-        
-        # 2. 构建模型架构 (参数直接读取 config，确保与训练一致)
-        input_dim = len(self.melody_stoi)
-        output_dim = len(self.vocab['harmony'])
-        
-        enc = Encoder(input_dim, config.ENC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
-        dec = Decoder(output_dim, config.DEC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
-        
-        self.model = Seq2Seq(enc, dec, self.device).to(self.device)
-        
-        # 3. 加载权重
-        if not os.path.exists(config.MODEL_SAVE_PATH):
-            raise FileNotFoundError(f"❌ 找不到模型文件: {config.MODEL_SAVE_PATH} (请先运行 train.py)")
-            
-        print(f"⚖️ 正在加载模型权重: {config.MODEL_SAVE_PATH}")
-        # weights_only=True 解决 FutureWarning 安全警告
-        self.model.load_state_dict(torch.load(config.MODEL_SAVE_PATH, map_location=self.device, weights_only=True))
-        
-        self.model.eval() # 开启评估模式
-        print("✅ AI Composer 准备就绪！")
+def set_seed(seed):
+    """
+    固定所有随机种子，确保实验可复现
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    print(f"🔒 随机种子已锁定为: {seed}")
 
-    def predict(self, melody_list, temperature=1.0):
-        """
-        【核心接口】
-        :param melody_list: 旋律 Token 列表
-        :param temperature: 采样温度 (0.1=保守/死板, 1.0=正常, 1.2=狂野)
-        """
-        # 1. 清洗与转换 (调用 utils，保证一致性)
-        clean_seq = [utils.clean_melody_token(t) for t in melody_list]
-        src_tensor, src_len = utils.token_to_tensor(clean_seq, self.melody_stoi, self.device)
+def init_weights(m):
+    """
+    初始化模型权重
+    参数 std 从 config 读取
+    """
+    for name, param in m.named_parameters():
+        if 'weight' in name:
+            nn.init.normal_(param.data, mean=0, std=config.INIT_WEIGHT_STD)
+        else:
+            nn.init.constant_(param.data, 0)
+
+def train(model, iterator, optimizer, criterion, clip):
+    model.train()
+    epoch_loss = 0
+    
+    for i, (src, trg, lengths) in enumerate(iterator):
+        src, trg = src.to(device), trg.to(device)
         
-        predicted_chords = []
+        optimizer.zero_grad()
         
-        with torch.no_grad():
-            # A. 编码器 (Encoder)
-            encoder_outputs, hidden, cell = self.model.encoder(src_tensor, src_len)
-            
-            # B. 调整 Hidden 状态
-            hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim=1).unsqueeze(0)
-            cell = torch.cat((cell[-2,:,:], cell[-1,:,:]), dim=1).unsqueeze(0)
-            
-            # C. 解码器 (Decoder) 初始化输入 <SOS>
-            sos_id = self.vocab['harmony'].get(config.SOS_TOKEN)
-            trg_token = torch.tensor([sos_id], device=self.device)
-            
-            # 获取特殊符号 ID 用于后续逻辑控制
-            hold_id = self.vocab['harmony'].get("_")
-            pad_id = self.vocab['harmony'].get(config.PAD_TOKEN)
+        # 🌟 修改点：显式传入 teacher_forcing_ratio
+        output = model(src, trg, lengths, teacher_forcing_ratio=config.TEACHER_FORCING_RATIO)
+        
+        # 展平输出以计算 Loss
+        output_dim = output.shape[-1]
+        output = output[:, 1:].reshape(-1, output_dim)
+        trg = trg[:, 1:].reshape(-1)
+        
+        loss = criterion(output, trg)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+        optimizer.step()
+        epoch_loss += loss.item()
+        
+    return epoch_loss / len(iterator)
 
-            # D. 循环生成
-            for step in range(len(clean_seq)):
-                output, hidden, cell = self.model.decoder(trg_token, hidden, cell, encoder_outputs)
-                
-                # ==========================================
-                # 🌟 策略 1: 强制第一步不能是 "_" (HOLD)
-                # ==========================================
-                if step == 0 and hold_id is not None:
-                    # 将 "_" 的 logits 设为负无穷，确保 softmax 后概率为 0
-                    output[:, hold_id] = -float('inf')
-                    if pad_id is not None:
-                        output[:, pad_id] = -float('inf') # 也不能是 PAD
-
-                # ==========================================
-                # 🌟 策略 2: 温度采样 (Temperature Sampling)
-                # ==========================================
-                # 除以温度: 温度越低，差异被放大(越像 argmax)；温度越高，差异被缩小(越平均)
-                logits = output / temperature
-                
-                # 转为概率分布
-                probs = torch.softmax(logits, dim=1)
-                
-                # 按照概率进行随机抽样 (不再是死板的 argmax)
-                top1 = torch.multinomial(probs, num_samples=1).squeeze(1)
-                
-                # 记录结果
-                chord_str = self.harmony_itos.get(top1.item(), config.UNK_TOKEN)
-                predicted_chords.append(chord_str)
-                
-                # 下一步的输入
-                trg_token = top1
-                
-        return predicted_chords
-
-# ================= 单元测试 =================
+# ================= 主程序 =================
 if __name__ == "__main__":
+    # 1. 环境初始化
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    
+    print(f"🚀 正在使用设备: {device}")
+    
+    # 🌟 修改点：设置随机种子
+    set_seed(config.SEED)
+    
+    # 2. 加载数据与字典
+    vocab = load_vocab(config.VOCAB_PATH)
+    harmony_stoi = vocab['harmony']
+    INPUT_DIM = len(vocab['melody'])
+    OUTPUT_DIM = len(harmony_stoi)
+
+    print("📦 正在加载数据...")
+    dataset = MusicDataset(config.DATASET_PATH)
+    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, collate_fn=collate_fn, shuffle=True)
+    print(f"✅ 数据加载完毕，共 {len(dataset)} 条训练样本")
+    
+    # 3. 初始化模型
+    enc = Encoder(INPUT_DIM, config.ENC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
+    dec = Decoder(OUTPUT_DIM, config.DEC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
+    model = Seq2Seq(enc, dec, device).to(device)
+    
+    # 初始化权重
+    model.apply(init_weights)
+    print("🧠 模型初始化完成")
+
+    # 4. 定义优化器
+    optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
+
+    # 5. 定义损失函数权重 (Anti-Lazy Strategy)
+    print("⚖️ 正在配置损失函数权重...")
+    loss_weights = torch.ones(OUTPUT_DIM).to(device)
+    
+    # 获取 "_" (HOLD) 的 ID
+    hold_id = harmony_stoi.get("_")
+    
+    if hold_id is not None:
+        # 🌟 修改点：权重值从 config 读取
+        loss_weights[hold_id] = config.HOLD_LOSS_WEIGHT
+        print(f"   -> 已应用配置: HOLD权重 = {config.HOLD_LOSS_WEIGHT}")
+    else:
+        print("⚠️ 警告: 字典中未找到 '_'，无法应用防偷懒策略！")
+    
+    criterion = nn.CrossEntropyLoss(ignore_index=0, weight=loss_weights)
+
+    # 6. 开始训练循环
+    print(f"\n🔥 开始训练！(目标: {config.N_EPOCHS} Epochs, LR: {config.LEARNING_RATE})")
+    print("-" * 65)
+    print(f"{'Epoch':<10} | {'Time':<10} | {'Loss':<10} | {'Status'}")
+    print("-" * 65)
+    
+    best_loss = float('inf')
+    last_model_path = os.path.join(config.MODEL_DIR, 'last_checkpoint.pth')
+
     try:
-        composer = AIComposer()
+        for epoch in range(config.N_EPOCHS):
+            start_time = time.time()
+            
+            train_loss = train(model, dataloader, optimizer, criterion, config.CLIP)
+            
+            end_time = time.time()
+            epoch_mins, epoch_secs = divmod(end_time - start_time, 60)
+            
+            save_msg = ""
+            if train_loss < best_loss:
+                best_loss = train_loss
+                os.makedirs(os.path.dirname(config.MODEL_SAVE_PATH), exist_ok=True)
+                torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
+                save_msg = "💾 Best Saved"
+                
+            print(f"{epoch+1:<10} | {int(epoch_mins)}m {int(epoch_secs)}s    | {train_loss:.4f}     | {save_msg}")
+
+    except KeyboardInterrupt:
+        print("\n🛑 用户中断训练。")
         
-        # 测试用例
-        test_melody = ['60', '60', '67', '67', '69', '69', '67', '0']
-        print(f"\n🎵 输入: {test_melody}")
-        
-        # 测试温度采样
-        print("\n--- 温度测试 ---")
-        print(f"Temp=0.8 (保守): {composer.predict(test_melody, temperature=0.8)}")
-        print(f"Temp=1.2 (狂野): {composer.predict(test_melody, temperature=1.2)}")
-        
-    except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+    finally:
+        print("\n📊 训练总结:")
+        if os.path.exists(config.MODEL_SAVE_PATH):
+            print(f"✅ 最佳模型: {config.MODEL_SAVE_PATH} (Loss: {best_loss:.4f})")
+        else:
+            print("⚠️ 未保存最佳模型。")
+
+        # 保存最后状态
+        torch.save(model.state_dict(), last_model_path)
+        print(f"💾 最终状态: {last_model_path}")
