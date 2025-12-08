@@ -15,3 +15,8 @@
 2025-12-08 02:29:07,962 - [Group_B_Logic] - INFO - 开始生成伴奏... 风格: Waltz
 2025-12-08 02:29:08,977 - [Group_B_Logic] - INFO - 模拟生成完毕: generated_outputs\result_1765132147_Waltz.mid
 2025-12-08 02:29:08,978 - [Pipeline] - INFO - 流程结束。输出: generated_outputs\result_1765132147_Waltz.mid
+2025-12-08 18:32:28,862 - [Pipeline] - INFO - >>> Stage 1: AI Prediction <<<
+2025-12-08 18:32:31,313 - [Pipeline] - INFO - >>> Stage 2: Rule-based Generation <<<
+2025-12-08 18:32:31,314 - [Group_B_Logic] - INFO - 开始生成伴奏... 风格: Waltz
+2025-12-08 18:32:32,318 - [Group_B_Logic] - INFO - 模拟生成完毕: generated_outputs\result_1765189951_Waltz.mid
+2025-12-08 18:32:32,318 - [Pipeline] - INFO - 流程结束。输出: generated_outputs\result_1765189951_Waltz.mid
