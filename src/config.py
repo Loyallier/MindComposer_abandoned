@@ -22,9 +22,14 @@ DROPOUT = 0.5
 
 # ================= 3. 训练参数(超参数) =================
 BATCH_SIZE = 32
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0002
 N_EPOCHS = 100
 CLIP = 1
+
+# 【新增控制开关】
+# True = 尝试加载 best_model.pth 继续训练
+# False = 忽略旧模型，强制从头开始
+RESUME_TRAINING = True
 
 # 【进阶设置 - 新增】
 SEED = 42                   # 随机种子 (保证每次训练结果可复现)
@@ -35,7 +40,7 @@ INIT_WEIGHT_STD = 0.01      # 权重初始化的标准差
 # 防止 AI 偷懒的惩罚权重
 # 如果模型一直输出 "_"，就把这个数调小 (如 0.01)
 # 如果模型太乱动，就把这个数调大 (如 0.1)
-HOLD_LOSS_WEIGHT = 0.04
+HOLD_LOSS_WEIGHT = 0.06
 
 # ================= 4. 特殊 Token 定义 (新增) =================
 # 必须与 vocab.json 和 utils.py 里的定义保持一致
@@ -43,6 +48,3 @@ PAD_TOKEN = "<PAD>"
 SOS_TOKEN = "<SOS>"
 EOS_TOKEN = "<EOS>"
 UNK_TOKEN = "0"
-
-# ================= 5. 其他配置 =================
-temperature=1.0
