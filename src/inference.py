@@ -9,6 +9,7 @@ try:
     from src import utils
     from src.model import Encoder, Decoder, Seq2Seq
 except ImportError:
+    # 如果找不到 src，说明可能是在 src 目录下直接运行的
     import config
     import utils
     from model import Encoder, Decoder, Seq2Seq
@@ -24,6 +25,9 @@ class AIComposer:
         print(f"🤖 AI Composer 正在初始化 (Device: {self.device})...")
 
         # 1. 加载字典
+        if not os.path.exists(config.VOCAB_PATH):
+             raise FileNotFoundError(f"❌ 找不到字典文件: {config.VOCAB_PATH} (请检查 src/config.py 路径)")
+             
         print(f"📖 正在加载字典: {config.VOCAB_PATH}")
         self.vocab = utils.load_vocab(config.VOCAB_PATH)
         
@@ -51,11 +55,12 @@ class AIComposer:
         self.model.eval() # 开启评估模式
         print("✅ AI Composer 准备就绪！")
 
-    def predict(self, melody_list, temperature=1.0):
+    def predict(self, melody_list, temperature=1.0, top_k=3):
         """
         【核心接口】
         :param melody_list: 旋律 Token 列表
-        :param temperature: 采样温度 (0.1=保守/死板, 1.0=正常, 1.2=狂野)
+        :param temperature: 温度 (建议 0.8-1.0)。越低越保守。
+        :param top_k: 只在概率最高的 k 个选项里抽样 (防止乱猜)。
         """
         # 1. 清洗与转换 (调用 utils，保证一致性)
         clean_seq = [utils.clean_melody_token(t) for t in melody_list]
@@ -75,40 +80,33 @@ class AIComposer:
             sos_id = self.vocab['harmony'].get(config.SOS_TOKEN)
             trg_token = torch.tensor([sos_id], device=self.device)
             
-            # 获取特殊符号 ID 用于后续逻辑控制
-            hold_id = self.vocab['harmony'].get("_")
-            pad_id = self.vocab['harmony'].get(config.PAD_TOKEN)
-
             # D. 循环生成
             for step in range(len(clean_seq)):
                 output, hidden, cell = self.model.decoder(trg_token, hidden, cell, encoder_outputs)
                 
                 # ==========================================
-                # 🌟 策略 1: 强制第一步不能是 "_" (HOLD)
+                # 🌟 Top-K 采样逻辑 (解决 AI 偷懒的关键)
                 # ==========================================
-                if step == 0 and hold_id is not None:
-                    # 将 "_" 的 logits 设为负无穷，确保 softmax 后概率为 0
-                    output[:, hold_id] = -float('inf')
-                    if pad_id is not None:
-                        output[:, pad_id] = -float('inf') # 也不能是 PAD
-
-                # ==========================================
-                # 🌟 策略 2: 温度采样 (Temperature Sampling)
-                # ==========================================
-                # 除以温度: 温度越低，差异被放大(越像 argmax)；温度越高，差异被缩小(越平均)
+                
+                # 应用温度
                 logits = output / temperature
                 
-                # 转为概率分布
-                probs = torch.softmax(logits, dim=1)
+                # 只保留前 K 个最大的概率
+                top_k_logits, top_k_indices = torch.topk(logits, top_k, dim=1)
                 
-                # 按照概率进行随机抽样 (不再是死板的 argmax)
-                top1 = torch.multinomial(probs, num_samples=1).squeeze(1)
+                # 对这 K 个进行 softmax
+                top_k_probs = torch.softmax(top_k_logits, dim=1)
                 
-                # 记录结果
+                # 在这 K 个里抽签
+                sample_idx_in_top_k = torch.multinomial(top_k_probs, num_samples=1).squeeze(1)
+                
+                # 映射回原始词表的 ID
+                top1 = top_k_indices.gather(1, sample_idx_in_top_k.unsqueeze(1)).squeeze(1)
+
+                # ==========================================
+
                 chord_str = self.harmony_itos.get(top1.item(), config.UNK_TOKEN)
                 predicted_chords.append(chord_str)
-                
-                # 下一步的输入
                 trg_token = top1
                 
         return predicted_chords
@@ -116,16 +114,17 @@ class AIComposer:
 # ================= 单元测试 =================
 if __name__ == "__main__":
     try:
+        print("正在测试 inference.py ...")
         composer = AIComposer()
         
         # 测试用例
         test_melody = ['60', '60', '67', '67', '69', '69', '67', '0']
         print(f"\n🎵 输入: {test_melody}")
         
-        # 测试温度采样
-        print("\n--- 温度测试 ---")
-        print(f"Temp=0.8 (保守): {composer.predict(test_melody, temperature=0.8)}")
-        print(f"Temp=1.2 (狂野): {composer.predict(test_melody, temperature=1.2)}")
+        # 对比测试：Top-K=1 (死板) vs Top-K=3 (灵活)
+        print(f"🎹 输出 (Top-K=1): {composer.predict(test_melody, top_k=1)}")
+        print(f"🎹 输出 (Top-K=3): {composer.predict(test_melody, top_k=3)}")
+        print("✅ 测试通过！")
         
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
