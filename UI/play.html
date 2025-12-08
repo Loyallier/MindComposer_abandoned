@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
     <style>
       * { box-sizing: border-box; }
       html, body { height: 100%; }
@@ -14,21 +15,25 @@
       .stage { position: relative; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; align-items: start; justify-items: center; padding: 10vh 6vw; }
       .title { text-align: center; margin-top: 2vh; z-index: 2; }
       .title h1 { margin: 0; font-weight: 800; letter-spacing: 0.06em; font-size: clamp(36px, 6vw, 72px); line-height: 1.05; background: linear-gradient(90deg, #3cf2d4, #4cc3ff 40%, #bc42ff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 10px rgba(76,195,255,0.35)) drop-shadow(0 0 20px rgba(116,92,255,0.28)); }
-      .panel { width: clamp(340px, 54vw, 720px); padding: 28px 28px 60px; border-radius: 22px; background: linear-gradient(180deg, #10224a 0%, #0c1e3f 52%), radial-gradient(120% 90% at 0% 0%, rgba(84,255,232,0.12) 0%, rgba(225,123,255,0.12) 100%); background-blend-mode: screen; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 42px rgba(76,195,255,0.12); position: relative; z-index: 2; }
+      .panel { width: clamp(360px, 60vw, 920px); padding: 24px 24px 48px; border-radius: 20px; background: transparent; box-shadow: none; position: relative; z-index: 2; border: none; }
       .ready { text-align: center; font-size: clamp(16px, 2.4vw, 22px); letter-spacing: 0.02em; color: #cfe6ff; opacity: 0.92; margin-bottom: 18px; }
       
-      .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 42px; animation: none; position: relative; }
-      .flower { position: absolute; inset: 0; margin: auto; width: clamp(120px, 22vw, 240px); height: clamp(120px, 22vw, 240px); opacity: 0.65; pointer-events: none; z-index: 0; }
-      .flower .petal { fill: none; stroke: rgba(200, 225, 255, 0.25); stroke-width: 2.4; }
-      .actions .btn { position: relative; z-index: 1; }
-      .btn { height: 52px; border-radius: 16px; border: none; outline: none; cursor: none; font-weight: 700; letter-spacing: 0.12em; font-size: 16px; color: #d5e9ff; background: linear-gradient(180deg, #142440, #0f1d36); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(76, 195, 255, 0.16); display: flex; align-items: center; justify-content: center; gap: 10px; }
-      .btn.primary { background: linear-gradient(90deg, #4cc3ff, #bc42ff); box-shadow: inset 0 1px 0 rgba(255,255,255,0.10); }
-      .btn:disabled { opacity: 0.6; cursor: default; }
-      .icon { width: 16px; height: 16px; display: inline-block; }
-      .icon.play { border-left: 14px solid #ffffff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
-      .icon.pause { width: 14px; height: 14px; background: linear-gradient(90deg, #ffffff 0 45%, transparent 45% 55%, #ffffff 55% 100%); }
+      .actionsBox { width: clamp(360px, 48vw, 640px); margin: 14px auto 0; padding: 12px 16px; border-radius: 16px; background: linear-gradient(90deg, #1e3e74 0%, #2c195e 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 12px 28px rgba(76,195,255,0.22), 0 6px 16px rgba(188,66,255,0.16); border: 1px solid rgba(76,195,255,0.32); position: relative; z-index: 3; }
+      .btn { pointer-events: auto; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; animation: none; justify-items: center; }
+      .btn { height: 44px; width: clamp(120px, 18vw, 180px); border-radius: 14px; border: none; outline: none; cursor: none; font-weight: 700; letter-spacing: 0.10em; font-size: 15px; color: #d5e9ff; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(188, 66, 255, 0.18); display: flex; align-items: center; justify-content: center; gap: 8px; }
+      .btn.primary { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12)); color: #d5e9ff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(188, 66, 255, 0.18); border: none; position: relative; }
+      .btn.primary::before { content: ""; position: absolute; inset: -2px; border-radius: 16px; padding: 2px; background: linear-gradient(90deg, #3cf2d4, #4cc3ff, #bc42ff); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+      .btn:disabled { opacity: 0.6; cursor: none; }
+      .icon { width: 14px; height: 14px; display: inline-block; }
+      .icon.play { border-left: 12px solid #ffffff; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+      .icon.pause { width: 12px; height: 12px; background: linear-gradient(90deg, #ffffff 0 45%, transparent 45% 55%, #ffffff 55% 100%); }
       .waves { position: absolute; inset: 0; z-index: 0; opacity: 0.75; }
       svg.waves { width: 100%; height: 100%; }
+      .opbox { margin-top: 6px; border-radius: 16px; background: transparent; box-shadow: none; height: clamp(280px, 48vh, 640px); display: grid; place-items: center; cursor: none; }
+      .opdraw { width: 100%; height: 100%; cursor: none; }
+      .cursorNote { position: fixed; left: 0; top: 0; width: 28px; height: 28px; pointer-events: none; z-index: 2; transform: translate3d(0, 0, 0) rotate(-12deg); will-change: transform, opacity; filter: drop-shadow(0 0 12px rgba(76,195,255,0.85)) drop-shadow(0 0 24px rgba(76,195,255,0.55)) drop-shadow(0 0 48px rgba(76,195,255,0.35)); mix-blend-mode: normal; overflow: visible; opacity: 0; animation: cursorIn 0.6s ease-out 0.9s both; }
+      @keyframes cursorIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
   </head>
   <body>
@@ -37,13 +42,15 @@
       <section class="panel">
         <div id="label" class="ready">Your melody is ready.</div>
         
-        <div class="actions">
-          <svg class="flower" viewBox="-80 -80 160 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-            <g id="flowerGroup"></g>
-          </svg>
-          <button id="play" class="btn primary"><span id="playIcon" class="icon play"></span>Play</button>
-          <button id="exportAudio" class="btn">Download Audio</button>
-          <button id="exportScore" class="btn">Download Score</button>
+        <div id="opbox" class="opbox">
+          <svg id="opdraw" class="opdraw" aria-label="Petal"></svg>
+        </div>
+        <div class="actionsBox">
+          <div class="actions">
+            <button id="play" class="btn primary"><span id="playIcon" class="icon play"></span>Play</button>
+            <button id="downloadAudio" class="btn">Download Audio</button>
+            <button id="previewScore" class="btn">Preview</button>
+          </div>
         </div>
         <audio id="player" preload="auto" style="display:none"></audio>
       </section>
@@ -60,34 +67,20 @@
       const player = document.getElementById('player');
       const playBtn = document.getElementById('play');
       const playIcon = document.getElementById('playIcon');
-      const expA = document.getElementById('exportAudio');
-      const expS = document.getElementById('exportScore');
-      const flower = document.querySelector('svg.flower');
-      const flowerGroup = flower.querySelector('#flowerGroup');
-      (function buildFlower() {
-        const count = 12;
-        const r = 48;
-        const rc = 22;
-        for (let i = 0; i < count; i++) {
-          const a = (i / count) * Math.PI * 2;
-          const cx = Math.cos(a) * rc;
-          const cy = Math.sin(a) * rc;
-          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          c.setAttribute('cx', cx);
-          c.setAttribute('cy', cy);
-          c.setAttribute('r', r);
-          c.setAttribute('class', 'petal');
-          flowerGroup.appendChild(c);
-        }
-      })();
+      const previewBtn = document.getElementById('previewScore');
+      const dlBtn = document.getElementById('downloadAudio');
       const audioUrl = sessionStorage.getItem('resultAudioUrl') || sessionStorage.getItem('audioUrl') || sessionStorage.getItem('wavUrl') || '';
       const scoreUrl = sessionStorage.getItem('resultScoreUrl') || sessionStorage.getItem('musicxmlUrl') || sessionStorage.getItem('midiUrl') || '';
-      if (audioUrl) { player.src = audioUrl; playBtn.disabled = false; expA.disabled = false; } else { playBtn.disabled = true; expA.disabled = true; }
-      if (scoreUrl) { expS.disabled = false; } else { expS.disabled = true; }
+      if (audioUrl) { player.src = audioUrl; playBtn.disabled = false; dlBtn.disabled = false; } else { playBtn.disabled = true; dlBtn.disabled = true; }
+      previewBtn.disabled = false;
+      let isFast = false;
       
-      playBtn.addEventListener('click', async () => { if (!audioUrl) return; if (player.paused) { await player.play(); playBtn.innerHTML = '<span id="playIcon" class="icon pause"></span>Pause'; } else { player.pause(); playBtn.innerHTML = '<span id="playIcon" class="icon play"></span>Play'; } });
-      expA.addEventListener('click', () => { if (!audioUrl) return; const a = document.createElement('a'); a.href = audioUrl; a.download = (sessionStorage.getItem('pendingName') || 'output') + (audioUrl.endsWith('.wav') ? '.wav' : (audioUrl.endsWith('.mp3') ? '.mp3' : '')); document.body.appendChild(a); a.click(); a.remove(); });
-      expS.addEventListener('click', () => { if (!scoreUrl) return; const a = document.createElement('a'); a.href = scoreUrl; a.download = (sessionStorage.getItem('pendingName') || 'score') + (scoreUrl.endsWith('.xml') ? '.musicxml' : (scoreUrl.endsWith('.mid') ? '.mid' : '')); document.body.appendChild(a); a.click(); a.remove(); });
+      playBtn.addEventListener('click', async () => { if (!audioUrl) return; if (player.paused) { await player.play(); playBtn.innerHTML = '<span id="playIcon" class="icon pause"></span>Pause'; isFast = true; } else { player.pause(); playBtn.innerHTML = '<span id="playIcon" class="icon play"></span>Play'; isFast = false; } });
+      player.addEventListener('play', () => { playBtn.innerHTML = '<span id="playIcon" class="icon pause"></span>Pause'; isFast = true; });
+      player.addEventListener('pause', () => { playBtn.innerHTML = '<span id="playIcon" class="icon play"></span>Play'; isFast = false; });
+      player.addEventListener('ended', () => { playBtn.innerHTML = '<span id="playIcon" class="icon play"></span>Play'; isFast = false; });
+      previewBtn.addEventListener('click', () => { const target = scoreUrl ? `score.html?mode=${mode}&score=${encodeURIComponent(scoreUrl)}` : `score.html?mode=${mode}`; window.location.href = target; });
+      dlBtn.addEventListener('click', () => { if (!audioUrl) return; const a = document.createElement('a'); a.href = audioUrl; a.download = (sessionStorage.getItem('pendingName') || 'output') + (audioUrl.endsWith('.wav') ? '.wav' : (audioUrl.endsWith('.mp3') ? '.mp3' : '')); a.style.display = 'none'; a.style.cursor = 'none'; document.body.appendChild(a); a.click(); a.remove(); });
       const svg = document.querySelector('svg.waves');
       const group = svg.querySelector('#waveGroup');
       const defs = svg.querySelector('#grads');
@@ -106,6 +99,358 @@
       function animate() { if (document.hidden) { requestAnimationFrame(animate); return; } const now = performance.now(); const dt = Math.max(8, now - lastFrameTime); lastFrameTime = now; avgDt = avgDt * 0.9 + dt * 0.1; const fps = 1000 / avgDt; t += 0.014; const ampWanted = spacing * 1.10 + spacing * 0.18 * Math.sin(t * 0.14); const amp = Math.min(spacing * 0.55, ampWanted); const segs = fps < 35 ? 120 : (fps < 50 ? 160 : 220); const basis = bases[segs]; const rippleScale = fps < 45 ? 0.12 : 0.18; const groupOffset = spacing * 0.085 * Math.sin(t * 0.46); const phase = t * 0.58; const sinPH = Math.sin(phase); const cosPH = Math.cos(phase); const sinPH11 = Math.sin(phase * 1.1); const cosPH11 = Math.cos(phase * 1.1); const sinPH06 = Math.sin(phase * 0.6); const cosPH06 = Math.cos(phase * 0.6); const ampLine = amp; for (let i = 0; i < lines; i++) { const y0 = baseY + i * spacing + groupOffset; paths[i].setAttribute('d', buildPath(y0, ampLine, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale)); } requestAnimationFrame(animate); }
       function buildPath(y0, amp, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale) { const parts = []; parts.push(`M0,${y0 + amp * sinPH}`); for (let i = 0; i < basis.xs.length; i++) { const major = amp * (basis.sinA[i] * cosPH + basis.cosA[i] * sinPH); const sA2c = basis.sinA2[i] * cosPH11 + basis.cosA2[i] * sinPH11; const cBc = basis.cosB[i] * cosPH06 - basis.sinB[i] * sinPH06; const ripple = rippleScale * amp * sA2c * cBc; const y = y0 + major + ripple; parts.push(` L${basis.xs[i]},${y}`); } return parts.join(''); }
       animate();
+      const opdraw = document.getElementById('opdraw');
+      if (opdraw) {
+        opdraw.setAttribute('viewBox', '0 0 400 400');
+        opdraw.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        opdraw.style.overflow = 'visible';
+        const defs2 = document.createElementNS(svgNS, 'defs');
+        const grad = document.createElementNS(svgNS, 'linearGradient');
+        grad.setAttribute('id', 'petalGrad');
+        grad.setAttribute('x1', '0%');
+        grad.setAttribute('y1', '0%');
+        grad.setAttribute('x2', '0%');
+        grad.setAttribute('y2', '100%');
+        const stop1 = document.createElementNS(svgNS, 'stop');
+        stop1.setAttribute('offset', '0%');
+        stop1.setAttribute('stop-color', '#e17bff');
+        const stop2 = document.createElementNS(svgNS, 'stop');
+        stop2.setAttribute('offset', '100%');
+        stop2.setAttribute('stop-color', '#4cc3ff');
+        grad.appendChild(stop1);
+        grad.appendChild(stop2);
+        defs2.appendChild(grad);
+        opdraw.appendChild(defs2);
+        const petalGroup = document.createElementNS(svgNS, 'g');
+        opdraw.appendChild(petalGroup);
+        let petalPaths = [];
+        const petal = document.createElementNS(svgNS, 'path');
+        petal.setAttribute('fill', 'none');
+        petal.setAttribute('stroke', 'url(#petalGrad)');
+        petal.setAttribute('stroke-width', '0.8');
+        petal.setAttribute('stroke-linecap', 'round');
+        petal.setAttribute('stroke-linejoin', 'round');
+        petal.setAttribute('opacity', '0.85');
+        petalGroup.appendChild(petal);
+        petal.setAttribute('data-ang', '0');
+        petal.setAttribute('data-phase', '0');
+        petal.setAttribute('data-layer', 'mid');
+        petal.setAttribute('data-period', '5200');
+        petal.setAttribute('data-grow', '0.75');
+        petal.setAttribute('data-minS', '0.18');
+        function drawPetal() {
+          const rect = opdraw.getBoundingClientRect();
+          const VBW = 400, VBH = 400;
+          const scaleX = rect.width / VBW;
+          const basePx = Math.min(rect.width, rect.height) / 24;
+          const W = Math.round(basePx / scaleX);
+          const H = Math.round(W * 2.4);
+          const cx = VBW / 2;
+          const cy = VBH / 2 + H / 2;
+          function makeD(w, h) {
+            const tc = w * 0.28;
+            const bc = w * 0.72;
+            return `M ${cx} ${cy - h/2} C ${cx + tc} ${cy - h*0.30}, ${cx + bc} ${cy + h*0.42}, ${cx} ${cy + h/2} C ${cx - bc} ${cy + h*0.42}, ${cx - tc} ${cy - h*0.30}, ${cx} ${cy - h/2} Z`;
+          }
+          petal.setAttribute('d', makeD(W, H));
+          const topX = VBW / 2;
+          const topY = VBH / 2;
+          const count = 20;
+          while (petalGroup.childNodes.length > 1) { petalGroup.removeChild(petalGroup.lastChild); }
+          for (let i = 1; i < count; i++) {
+            const clone = petal.cloneNode(true);
+            const ang = i * (360 / count);
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+            clone.setAttribute('data-layer', 'mid');
+            clone.setAttribute('data-period', '5200');
+            clone.setAttribute('data-grow', '0.75');
+            clone.setAttribute('data-minS', '0.18');
+          }
+          const W2 = Math.round(W * 1.22);
+          const H2 = Math.round(W2 * 2.4);
+          const petalOuter = document.createElementNS(svgNS, 'path');
+          petalOuter.setAttribute('fill', 'none');
+          petalOuter.setAttribute('stroke', 'url(#petalGrad)');
+          petalOuter.setAttribute('stroke-width', '0.6');
+          petalOuter.setAttribute('stroke-linecap', 'round');
+          petalOuter.setAttribute('stroke-linejoin', 'round');
+          petalOuter.setAttribute('opacity', '0.72');
+          petalOuter.setAttribute('d', makeD(W2, H2));
+          petalGroup.appendChild(petalOuter);
+          petalOuter.setAttribute('data-ang', '0');
+          petalOuter.setAttribute('data-phase', '0');
+          petalOuter.setAttribute('data-layer', 'outer');
+          petalOuter.setAttribute('data-period', '6800');
+          petalOuter.setAttribute('data-grow', '0.80');
+          petalOuter.setAttribute('data-minS', '0.16');
+          const countOuter = 22;
+          for (let i = 1; i < countOuter; i++) {
+            const clone = petalOuter.cloneNode(true);
+            const ang = i * (360 / countOuter);
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+          }
+          const W3 = Math.round(W * 0.80);
+          const H3 = Math.round(W3 * 2.4);
+          const petalInner = document.createElementNS(svgNS, 'path');
+          petalInner.setAttribute('fill', 'none');
+          petalInner.setAttribute('stroke', 'url(#petalGrad)');
+          petalInner.setAttribute('stroke-width', '1.0');
+          petalInner.setAttribute('stroke-linecap', 'round');
+          petalInner.setAttribute('stroke-linejoin', 'round');
+          petalInner.setAttribute('opacity', '0.96');
+          petalInner.setAttribute('d', makeD(W3, H3));
+          petalGroup.appendChild(petalInner);
+          petalInner.setAttribute('data-ang', '0');
+          petalInner.setAttribute('data-phase', '0');
+          petalInner.setAttribute('data-layer', 'inner');
+          petalInner.setAttribute('data-period', '4200');
+          petalInner.setAttribute('data-grow', '0.70');
+          petalInner.setAttribute('data-minS', '0.22');
+          const countInner = 14;
+          const halfStep = 360 / countInner / 2;
+          for (let i = 0; i < countInner; i++) {
+            const clone = petalInner.cloneNode(true);
+            const ang = i * (360 / countInner) + halfStep;
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+          }
+          const W4 = Math.round(W * 1.36);
+          const H4 = Math.round(W4 * 2.4);
+          const petalOuter2 = document.createElementNS(svgNS, 'path');
+          petalOuter2.setAttribute('fill', 'none');
+          petalOuter2.setAttribute('stroke', 'url(#petalGrad)');
+          petalOuter2.setAttribute('stroke-width', '0.5');
+          petalOuter2.setAttribute('stroke-linecap', 'round');
+          petalOuter2.setAttribute('stroke-linejoin', 'round');
+          petalOuter2.setAttribute('opacity', '0.68');
+          petalOuter2.setAttribute('d', makeD(W4, H4));
+          petalGroup.appendChild(petalOuter2);
+          petalOuter2.setAttribute('data-ang', '0');
+          petalOuter2.setAttribute('data-phase', '0');
+          petalOuter2.setAttribute('data-layer', 'outer2');
+          petalOuter2.setAttribute('data-period', '7800');
+          petalOuter2.setAttribute('data-grow', '0.82');
+          petalOuter2.setAttribute('data-minS', '0.14');
+          const countOuter2 = 32;
+          for (let i = 1; i < countOuter2; i++) {
+            const clone = petalOuter2.cloneNode(true);
+            const ang = i * (360 / countOuter2);
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+          }
+          const W5 = Math.round(W * 0.68);
+          const H5 = Math.round(W5 * 2.4);
+          const petalInner2 = document.createElementNS(svgNS, 'path');
+          petalInner2.setAttribute('fill', 'none');
+          petalInner2.setAttribute('stroke', 'url(#petalGrad)');
+          petalInner2.setAttribute('stroke-width', '1.1');
+          petalInner2.setAttribute('stroke-linecap', 'round');
+          petalInner2.setAttribute('stroke-linejoin', 'round');
+          petalInner2.setAttribute('opacity', '0.98');
+          petalInner2.setAttribute('d', makeD(W5, H5));
+          petalGroup.appendChild(petalInner2);
+          petalInner2.setAttribute('data-ang', '0');
+          petalInner2.setAttribute('data-phase', '0');
+          petalInner2.setAttribute('data-layer', 'inner2');
+          petalInner2.setAttribute('data-period', '3600');
+          petalInner2.setAttribute('data-grow', '0.68');
+          petalInner2.setAttribute('data-minS', '0.24');
+          const countInner2 = 18;
+          const halfStep2 = 360 / countInner2 / 2;
+          for (let i = 0; i < countInner2; i++) {
+            const clone = petalInner2.cloneNode(true);
+            const ang = i * (360 / countInner2) + halfStep2;
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+          }
+          const W6 = Math.round(W * 1.48);
+          const H6 = Math.round(W6 * 2.4);
+          const petalOuter3 = document.createElementNS(svgNS, 'path');
+          petalOuter3.setAttribute('fill', 'none');
+          petalOuter3.setAttribute('stroke', 'url(#petalGrad)');
+          petalOuter3.setAttribute('stroke-width', '0.45');
+          petalOuter3.setAttribute('stroke-linecap', 'round');
+          petalOuter3.setAttribute('stroke-linejoin', 'round');
+          petalOuter3.setAttribute('opacity', '0.64');
+          petalOuter3.setAttribute('d', makeD(W6, H6));
+          petalGroup.appendChild(petalOuter3);
+          petalOuter3.setAttribute('data-ang', '0');
+          petalOuter3.setAttribute('data-phase', '0');
+          petalOuter3.setAttribute('data-layer', 'outer3');
+          petalOuter3.setAttribute('data-period', '8800');
+          petalOuter3.setAttribute('data-grow', '0.84');
+          petalOuter3.setAttribute('data-minS', '0.12');
+          const countOuter3 = 40;
+          for (let i = 1; i < countOuter3; i++) {
+            const clone = petalOuter3.cloneNode(true);
+            const ang = i * (360 / countOuter3);
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+          }
+          const W7 = Math.round(W * 0.60);
+          const H7 = Math.round(W7 * 2.4);
+          const petalInner3 = document.createElementNS(svgNS, 'path');
+          petalInner3.setAttribute('fill', 'none');
+          petalInner3.setAttribute('stroke', 'url(#petalGrad)');
+          petalInner3.setAttribute('stroke-width', '1.20');
+          petalInner3.setAttribute('stroke-linecap', 'round');
+          petalInner3.setAttribute('stroke-linejoin', 'round');
+          petalInner3.setAttribute('opacity', '0.97');
+          petalInner3.setAttribute('d', makeD(W7, H7));
+          petalGroup.appendChild(petalInner3);
+          petalInner3.setAttribute('data-ang', '0');
+          petalInner3.setAttribute('data-phase', '0');
+          petalInner3.setAttribute('data-layer', 'inner3');
+          petalInner3.setAttribute('data-period', '3000');
+          petalInner3.setAttribute('data-grow', '0.66');
+          petalInner3.setAttribute('data-minS', '0.26');
+          const countInner3 = 22;
+          const halfStep3 = 360 / countInner3 / 2;
+          for (let i = 0; i < countInner3; i++) {
+            const clone = petalInner3.cloneNode(true);
+            const ang = i * (360 / countInner3) + halfStep3;
+            clone.setAttribute('transform', `rotate(${ang} ${topX} ${topY})`);
+            petalGroup.appendChild(clone);
+            clone.setAttribute('data-ang', String(ang));
+            clone.setAttribute('data-phase', '0');
+          }
+          petalPaths = Array.from(petalGroup.querySelectorAll('path'));
+          for (let i = 0; i < petalPaths.length; i++) {
+            const p = petalPaths[i];
+            p.setAttribute('data-sw', p.getAttribute('stroke-width') || '1');
+          }
+          const pathsBase = petalPaths.slice();
+          for (let i = 0; i < pathsBase.length; i++) {
+            const b = pathsBase[i];
+            const o = b.cloneNode(true);
+            const sw = parseFloat(b.getAttribute('stroke-width') || '1');
+            o.setAttribute('stroke', '#ff9ad4');
+            o.setAttribute('opacity', '0.70');
+            o.setAttribute('stroke-width', sw.toFixed(3));
+            o.setAttribute('data-ang', b.getAttribute('data-ang') || '0');
+            o.setAttribute('data-period', b.getAttribute('data-period') || '');
+            o.setAttribute('data-grow', b.getAttribute('data-grow') || '');
+            o.setAttribute('data-minS', b.getAttribute('data-minS') || '');
+            petalGroup.appendChild(o);
+            const L = o.getTotalLength();
+            const tip = Math.max(2, L * 0.02);
+            o.setAttribute('stroke-dasharray', `${tip} ${Math.max(0, L - tip)}`);
+            o.setAttribute('stroke-dashoffset', '0');
+          }
+          petalPaths = Array.from(petalGroup.querySelectorAll('path'));
+        }
+        function centerToScreen() {
+          const r = petalGroup.getBoundingClientRect();
+          const targetX = innerWidth / 2;
+          const targetY = innerHeight / 2;
+          const curT = opdraw.style.transform || '';
+          let curX = 0, curY = 0;
+          const m = curT.match(/translate\(([-0-9.]+)px,\s*([-0-9.]+)px\)/);
+          if (m) { curX = parseFloat(m[1]) || 0; curY = parseFloat(m[2]) || 0; }
+          const deltaX = targetX - (r.left + r.width / 2);
+          const deltaY = targetY - (r.top + r.height / 2);
+          const newX = curX + deltaX;
+          const newY = curY + deltaY;
+          opdraw.style.transform = `translate(${newX.toFixed(2)}px, ${newY.toFixed(2)}px)`;
+        }
+        drawPetal();
+        centerToScreen();
+        let tPetal = 0;
+        function animatePetal() {
+          const now = performance.now();
+          tPetal = now;
+          const periodDefault = 4800;
+          const growDefault = 0.75;
+          const topX = 200;
+          const topY = 200;
+          const baseScale = 1.22;
+          for (let i = 0; i < petalPaths.length; i++) {
+            const p = petalPaths[i];
+            const per0 = parseFloat(p.getAttribute('data-period')) || periodDefault;
+            const per = per0 * (isFast ? 1 : 1.8);
+            const growEnd = parseFloat(p.getAttribute('data-grow')) || growDefault;
+            const minS = parseFloat(p.getAttribute('data-minS')) || 0.18;
+            const t = (now % per) / per;
+            let s = 1.0;
+            let op = 1.0;
+            if (t < growEnd) {
+              const g = t / growEnd;
+              const ease = g * g * (3 - 2 * g);
+              s = minS + (1.0 - minS) * ease;
+              op = 0.10 + 0.90 * ease;
+            } else {
+              const f = (t - growEnd) / (1 - growEnd);
+              s = 1.0;
+              op = Math.max(0, 0.90 * (1 - f));
+            }
+            const ang = parseFloat(p.getAttribute('data-ang') || '0');
+            const tw = 6 * Math.sin(now * (isFast ? 0.0003 : 0.00018) + ang * 0.05);
+            const tilt = 0.08 * Math.sin(now * (isFast ? 0.0005 : 0.00028) + ang * 0.03);
+            const sx = baseScale * s * (1 + tilt);
+            const sy = baseScale * s * (1 - tilt);
+            p.setAttribute('opacity', op.toFixed(2));
+            p.setAttribute('transform', `translate(${topX} ${topY}) rotate(${ang}) skewX(${tw}) skewY(${(-tw*0.5)}) scale(${sx} ${sy}) translate(${-topX} ${-topY})`);
+          }
+          requestAnimationFrame(animatePetal);
+        }
+        animatePetal();
+        window.addEventListener('resize', () => { drawPetal(); centerToScreen(); });
+      }
+      const cursorNote = document.createElement('div');
+      cursorNote.className = 'cursorNote';
+      document.body.appendChild(cursorNote);
+      const noteSvg = document.createElementNS(svgNS, 'svg');
+      noteSvg.setAttribute('viewBox', '-24 -36 96 192');
+      noteSvg.setAttribute('width', '28');
+      noteSvg.setAttribute('height', '28');
+      noteSvg.style.overflow = 'visible';
+      const noteText = document.createElementNS(svgNS, 'text');
+      noteText.setAttribute('x', '24');
+      noteText.setAttribute('y', '48');
+      noteText.setAttribute('text-anchor', 'middle');
+      noteText.setAttribute('dominant-baseline', 'middle');
+      noteText.setAttribute('font-family', '"Noto Music", serif');
+      noteText.setAttribute('font-size', '96');
+      noteText.setAttribute('paint-order', 'stroke fill');
+      noteText.setAttribute('stroke-width', '2');
+      noteText.textContent = '\uD834\uDD1E';
+      noteSvg.appendChild(noteText);
+      cursorNote.appendChild(noteSvg);
+      let cx = innerWidth / 2, cy = innerHeight / 2;
+      let tx = cx, ty = cy;
+      let prevX = tx, prevY = ty, prevTime = performance.now();
+      let speedScale = 0;
+      const half = 14;
+      function trackCursor() {
+        const now = performance.now();
+        const dt = Math.max(16, now - prevTime);
+        const dx = tx - prevX; const dy = ty - prevY;
+        const v = Math.sqrt(dx * dx + dy * dy) / dt;
+        speedScale = Math.min(1, v * 2);
+        prevX = tx; prevY = ty; prevTime = now;
+        cx += (tx - cx) * 0.22;
+        cy += (ty - cy) * 0.22;
+        cursorNote.style.transform = `translate3d(${(cx - half).toFixed(2)}px, ${(cy - half).toFixed(2)}px, 0) rotate(-12deg)`;
+        noteText.setAttribute('fill', 'rgb(80,245,255)');
+        noteText.setAttribute('stroke', 'rgb(255,255,255)');
+        requestAnimationFrame(trackCursor);
+      }
+      window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; }, { passive: true });
+      trackCursor();
     </script>
   </body>
 </html>
