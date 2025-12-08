@@ -184,6 +184,7 @@
       const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const titleEl = document.querySelector('.title');
       start.addEventListener('click', () => {
+        sessionStorage.setItem('showInfoOnInput', '1');
         if (!prefersReduced) {
           titleEl.classList.add('toTop');
           const onEnd = (e) => {
