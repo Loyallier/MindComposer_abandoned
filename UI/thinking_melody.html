@@ -25,12 +25,22 @@
       .title h1.melody { background: linear-gradient(90deg, #7ccfff, #e17bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
       .title h1.chord { background: linear-gradient(90deg, #3cf2d4, #4cc3ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
       canvas.scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+      .waves { position: absolute; inset: 0; z-index: 1; opacity: 0.75; -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 18vh, rgba(0,0,0,1) 22vh); mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 18vh, rgba(0,0,0,1) 22vh); }
+      svg.waves { width: 100%; height: 100%; }
+      .statusBar { position: absolute; left: 50%; bottom: 12vh; transform: translateX(-50%); background: transparent; border: none; padding: 0; width: auto; pointer-events: none; color: #cfe6ff; font-size: clamp(14px, 2vw, 20px); letter-spacing: 0.12em; text-align: center; text-shadow: 0 0 8px rgba(76,195,255,0.45), 0 0 16px rgba(116,92,255,0.35); z-index: 2; }
+      .cursorNote { position: fixed; left: 0; top: 0; width: 28px; height: 28px; pointer-events: none; z-index: 2; transform: translate3d(0, 0, 0) rotate(-12deg); will-change: transform, opacity; filter: drop-shadow(0 0 12px rgba(76,195,255,0.85)) drop-shadow(0 0 24px rgba(76,195,255,0.55)) drop-shadow(0 0 48px rgba(76,195,255,0.35)); mix-blend-mode: normal; overflow: visible; opacity: 0; animation: cursorIn 0.6s ease-out 0.9s both; }
+      @keyframes cursorIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
   </head>
   <body>
     <main class="stage">
       <section class="title"><h1 id="title" class="melody">Generating melody...</h1></section>
       <canvas class="scene" aria-hidden="true"></canvas>
+      <svg class="waves" viewBox="0 0 3600 1000" preserveAspectRatio="none" aria-hidden="true" shape-rendering="optimizeSpeed">
+        <defs id="grads"></defs>
+        <g id="waveGroup" fill="none" stroke-width="1.6" opacity="0.75" stroke-linecap="round"></g>
+      </svg>
+      <div id="statusBar" class="statusBar" aria-live="polite">Simulating style...</div>
     </main>
     <script>
       const qp = new URLSearchParams(location.search);
@@ -104,6 +114,64 @@
         if (ok) { window.location.href = `play.html?mode=${mode}`; } else { setTimeout(autoForward, 800); }
       }
       setTimeout(autoForward, 800);
+      const cursorNote = document.createElement('div');
+      cursorNote.className = 'cursorNote';
+      document.body.appendChild(cursorNote);
+      const noteSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      noteSvg.setAttribute('viewBox', '-24 -36 96 192');
+      noteSvg.setAttribute('width', '28');
+      noteSvg.setAttribute('height', '28');
+      noteSvg.style.overflow = 'visible';
+      const noteText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      noteText.setAttribute('x', '24');
+      noteText.setAttribute('y', '48');
+      noteText.setAttribute('text-anchor', 'middle');
+      noteText.setAttribute('dominant-baseline', 'middle');
+      noteText.setAttribute('font-family', '"Noto Music", serif');
+      noteText.setAttribute('font-size', '96');
+      noteText.setAttribute('paint-order', 'stroke fill');
+      noteText.setAttribute('stroke-width', '2');
+      noteText.textContent = '\uD834\uDD1E';
+      noteSvg.appendChild(noteText);
+      cursorNote.appendChild(noteSvg);
+      let cx = innerWidth / 2, cy = innerHeight / 2;
+      let tx = cx, ty = cy;
+      let prevX = tx, prevY = ty, prevTime = performance.now();
+      let speedScale = 0;
+      const half = 14;
+      function trackCursor() {
+        const now = performance.now();
+        const dt = Math.max(16, now - prevTime);
+        const dx = tx - prevX; const dy = ty - prevY;
+        const v = Math.sqrt(dx * dx + dy * dy) / dt;
+        speedScale = Math.min(1, v * 2);
+        prevX = tx; prevY = ty; prevTime = now;
+        cx += (tx - cx) * 0.22;
+        cy += (ty - cy) * 0.22;
+        cursorNote.style.transform = `translate3d(${(cx - half).toFixed(2)}px, ${(cy - half).toFixed(2)}px, 0) rotate(-12deg)`;
+        noteText.setAttribute('fill', 'rgb(80,245,255)');
+        noteText.setAttribute('stroke', 'rgb(255,255,255)');
+        requestAnimationFrame(trackCursor);
+      }
+      window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; }, { passive: true });
+      trackCursor();
+      const svg = document.querySelector('svg.waves');
+      const group = svg.querySelector('#waveGroup');
+      const defs = svg.querySelector('#grads');
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const width = 3600;
+      const FREQ = Math.PI * 6;
+      function makeBasis(segs) { const step = width / segs; const xs = []; const sinA = [], cosA = []; const sinA2 = [], cosA2 = []; const sinB = [], cosB = []; for (let x = step; x <= width; x += step) { const tn = x / width; xs.push(x); const a = tn * FREQ; sinA.push(Math.sin(a)); cosA.push(Math.cos(a)); const a2 = tn * FREQ * 2.2; sinA2.push(Math.sin(a2)); cosA2.push(Math.cos(a2)); const b = tn * 2.9; sinB.push(Math.sin(b)); cosB.push(Math.cos(b)); } return { xs, sinA, cosA, sinA2, cosA2, sinB, cosB }; }
+      const bases = { 120: makeBasis(120), 160: makeBasis(160), 220: makeBasis(220) };
+      group.setAttribute('transform', 'rotate(-30 1800 500)');
+      const lines = 56; const spacing = 84; const baseY = -760; const paths = [];
+      for (let i = 0; i < lines; i++) { const p = document.createElementNS(svgNS, 'path'); const grad = document.createElementNS(svgNS, 'linearGradient'); grad.setAttribute('id', `grad${i}`); grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%'); grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '0%'); const colors = [ `hsl(${190 + i * 5}, 100%, 62%)`, `hsl(${220 + i * 5}, 100%, 60%)`, `hsl(${260 + i * 5}, 100%, 62%)`, `hsl(${300 + i * 5}, 100%, 66%)` ]; const offsets = ['0%', '35%', '70%', '100%']; for (let s = 0; s < colors.length; s++) { const stop = document.createElementNS(svgNS, 'stop'); stop.setAttribute('offset', offsets[s]); stop.setAttribute('stop-color', colors[s]); grad.appendChild(stop); } defs.appendChild(grad); p.setAttribute('stroke', `url(#grad${i})`); p.setAttribute('stroke-width', '2.0'); p.setAttribute('opacity', '0.60'); group.appendChild(p); paths.push(p); }
+      function buildPath(y0, amp, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale) { const parts = []; parts.push(`M0,${y0 + amp * sinPH}`); for (let i = 0; i < basis.xs.length; i++) { const major = amp * (basis.sinA[i] * cosPH + basis.cosA[i] * sinPH); const sA2c = basis.sinA2[i] * cosPH11 + basis.cosA2[i] * sinPH11; const cBc = basis.cosB[i] * cosPH06 - basis.sinB[i] * sinPH06; const ripple = rippleScale * amp * sA2c * cBc; const y = y0 + major + ripple; parts.push(` L${basis.xs[i]},${y}`); } return parts.join(''); }
+      let t = 0; let lastFrameTime = performance.now(); let avgDt = 16;
+      function animateWaves() { if (document.hidden) { requestAnimationFrame(animateWaves); return; } const now = performance.now(); const dt = Math.max(8, now - lastFrameTime); lastFrameTime = now; avgDt = avgDt * 0.9 + dt * 0.1; const fps = 1000 / avgDt; t += 0.014; const ampWanted = spacing * 1.10 + spacing * 0.18 * Math.sin(t * 0.14); const amp = Math.min(spacing * 0.55, ampWanted); const segs = fps < 35 ? 120 : (fps < 50 ? 160 : 220); const basis = bases[segs]; const rippleScale = fps < 45 ? 0.12 : 0.18; const groupOffset = spacing * 0.085 * Math.sin(t * 0.46); const phase = t * 0.58; const sinPH = Math.sin(phase); const cosPH = Math.cos(phase); const sinPH11 = Math.sin(phase * 1.1); const cosPH11 = Math.cos(phase * 1.1); const sinPH06 = Math.sin(phase * 0.6); const cosPH06 = Math.cos(phase * 0.6); const ampLine = amp; for (let i = 0; i < lines; i++) { const y0 = baseY + i * spacing + groupOffset; paths[i].setAttribute('d', buildPath(y0, ampLine, sinPH, cosPH, sinPH11, cosPH11, sinPH06, cosPH06, basis, rippleScale)); } requestAnimationFrame(animateWaves); }
+      animateWaves();
+      function setProgressMessage(msg) { const el = document.getElementById('statusBar'); if (el) el.textContent = msg; }
+      setProgressMessage('Simulating style...');
     </script>
   </body>
 </html>
