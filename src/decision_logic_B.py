@@ -1,8 +1,9 @@
+import os
 import music21 as m21
 from typing import List, Dict, Tuple
 import logging
 import math
-from src.data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
+from data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
 
 # 初始化日志
 logger = logging.getLogger("B_Decision")
@@ -96,7 +97,6 @@ def _calculate_melody_density(melody_stream: m21.stream.Stream, consolidated_cho
         # 密度计算
         if duration > 0:
             # 使用一个缩放因子 (0.5) 和平方根来将密度值映射到 0-1 范围，并平滑变化
-            # 基准速率设置为 1.0 QL 2 个音符时密度为 1.0 (sqrt(2) * 0.7 = ~1.0)
             density = math.sqrt(segment_notes_count / duration) * 0.7 
         else:
             density = 0.0
@@ -146,81 +146,78 @@ def generate_accompaniment_part(
             
         offsets = CHORD_TYPES[chord_type]
         # 根音定在 C3 (MIDI 48) 八度，作为琶音或其他音符的基准
+        # 注意：这里的 root_midi 是 C3 八度的根音 (例如 D3 = 50, A3 = 57)
         root_midi = m21.pitch.Pitch(root_name + '3').midi 
+        
+        logger.debug(f"--- DIAGNOSIS: 和弦 {chord_label}, 根音 {root_name}, 偏移量 {offsets} ---")
 
         # 2. 决策：选择织体模板
         pattern_name = select_texture_pattern(selected_style, density)
-        # ... (rest of the template selection logic remains unchanged) ...
         template = PATTERN_TEMPLATES.get(pattern_name)
         
         if not template:
             logger.warning(f"风格 {pattern_name} 无模板，回退到 Pop Ballad。")
             template = PATTERN_TEMPLATES["Pop Ballad"]
-            pattern_name = "Pop Ballad" # 确保日志记录正确
+            pattern_name = "Pop Ballad" 
             
         logger.debug(f"和弦 {chord_label}, 时长 {segment_length:.2f} QL, 织体 {pattern_name}")
 
         # 3. 实例化音符并插入 Part (关键步骤：循环填充整个和弦时长)
-        # ... (rest of the note insertion logic remains unchanged) ...
         time_elapsed_in_segment = 0.0
-        
-        # 确定模板的时长，以便重复填充
         template_duration = 4.0 
         
         if pattern_name == "Waltz":
             template_duration = 3.0
         
-        # 不断重复模板，直到填满整个 segment_length
         while time_elapsed_in_segment < segment_length:
             
-            # 用于记录当前模板周期中最后一个音符的结束时间
             last_note_end_time = time_elapsed_in_segment
             
             for time_offset, index, duration in template:
                 
-                # 检查此音符是否会超出和弦片段的剩余时间
                 note_start_time = time_elapsed_in_segment + time_offset
-                original_duration = duration # 备份原始时长
                 
                 if note_start_time >= segment_length:
-                    # 如果音符起始时间已经超过片段长度，跳出模板循环
                     break 
                 
                 note_end_time = note_start_time + duration
                 
                 if note_end_time > segment_length:
-                    # 截断音符时长，使其恰好在片段结束
                     duration = segment_length - note_start_time
                 
-                # 确保索引在 offsets 范围内
                 offset_value = offsets[index % len(offsets)]
                 
-                # 根音（index=0）通常放置在更低的八度（C2），其他音符在中八度（C3）
+                # 【音高修正】
                 if index == 0:
-                    note_midi = m21.pitch.Pitch(root_name + '2').midi + offset_value
+                    # 根音（index=0）降八度 (C2)，然后加上偏移量 (通常为 0)
+                    note_midi = (root_midi - 12) + offset_value
                 else:
+                    # 其他音符保持 C3 八度
                     note_midi = root_midi + offset_value
-
-                note = m21.note.Note()
-                note.midi = note_midi
+                
+                # =========================================================
+                # 【核心修改】: 显式创建 Pitch 对象，确保音高被正确注册
+                # =========================================================
+                note_pitch = m21.pitch.Pitch(midi=note_midi)
+                
+                note = m21.note.Note(pitch=note_pitch) # 使用 pitch 参数创建 Note 对象
                 note.duration.quarterLength = duration
                 
+                logger.debug(
+                    f"   音符: 索引={index}, 偏移量={offset_value}, MIDI={note_midi} ({note_pitch.nameWithOctave}), QL={duration}"
+                )
+
                 # 插入到 Part 中
                 accompaniment_part.insert(current_offset + note_start_time, note)
                 
-                # 更新当前模板周期中最后一个音符的结束时间
                 last_note_end_time = current_offset + note_start_time + duration
 
             
-            # 推进已用时间（使用模板的完整时长）
             time_elapsed_in_segment += template_duration
             
-            # 如果上一个模板周期在片段内结束，但下一个模板周期会超出，则退出循环
             if time_elapsed_in_segment > segment_length and time_elapsed_in_segment - template_duration == last_note_end_time:
                 break
 
-
-        # 推进到下一个和弦的起始时间
         current_offset += segment_length
 
     return accompaniment_part
@@ -245,7 +242,6 @@ def render_accompaniment_from_raw_inputs(
         melody_stream = m21.converter.parse(melody_path)
     except Exception as e:
         logger.error(f"无法解析旋律 MIDI 文件: {e}")
-        # 如果解析失败，返回一个空的 Part
         return m21.stream.Part()
     
     # 3. 密度计算
@@ -261,3 +257,75 @@ def render_accompaniment_from_raw_inputs(
     )
     
     return accompaniment_part
+
+# ----------------------------------------------------
+# 5. 测试主流程 (Test Block)
+# ----------------------------------------------------
+if __name__ == "__main__":
+    
+    logging.basicConfig(level=logging.DEBUG) 
+
+    # 1. 设置输入参数
+    base_dir = os.path.dirname(os.path.abspath(__file__)) 
+    melody_filename = "test_melody.mid" 
+    melody_file_path = os.path.join(base_dir, melody_filename)
+    
+    # 模拟 Group A 输出的和弦序列 (与您上次运行的相同)
+    example_chord_sequence = [
+        'A', '_', 'D', '_', 'D', '_', '_', '_', '_', '_', '_', '_', 'D', 'D', 
+        'D', '_', '_', 'D', 'D', '_', '_', 'D', 'A7', '_', '_', 'D', '_', '0', 
+        '_', 'D', '0', 'D', '_', '0', '_', '0', '_', 'D', '0', '0', '_', '_', 
+        'D', '0', '_', '_', '0', '_', '_', '0', '_', 'D', '0', '_', '0', '0', 
+        'D', '_', '0', '_', '0', '0', '_', '_', 'D', '_', '0', '_', 'D', '_', 
+        'D', 'D', 'D', '_', 'D', 'D', '_', 'D', 'D', '_', 'D', 'D', 'D', 'D', 
+        '_', 'D', 'D', '_', 'A7', '_', '_', 'D', '0', '_', '0', '0', '_', '_', 
+        '_', '_', '0', '_', '0', '_', 'D', '_', 'D', 'D', 'D', 'D', 'D', 'D', 
+        'D', 'D', '_', 'D', '_', 'D', 'D', 'A7', '_', 'D', 'D', '0', '0', 'D', 
+        '0', '_', 'D', 'D', '_', '0', 'D', 'D', '0', 'D', '_', '0', '0', '_', 
+        '_', '_', '0', 'D', '0', '_', 'D', 'D', '0', 'D', '_', '_', 'D', '_', 
+        'D', 'D', 'G', 'G', 'D', 'A7', 'D', 'D', '_', '0', '_', '0', '_', '0', 
+        'D', '_', '_', '0', 'D', '0', '_', '_', '_', 'D', 'D', 'D', '0', '_', 
+        'D', '_', 'D', 'D', '_', '0', 'D', 'D', '_', '_', '_', 'G', 'D', 'D', 
+        'D', 'A7', '_', '_', '_', '0', 'D', '_', 'D', '0', 'D', '_', '_', '_', 
+        'D', 'D', 'D', 'D', 'D', 'A7', 'A7', 'D', 'A7', '_', 'A7', 'D', 'D', 
+        'A7', 'D', 'D', 'D', 'D', '_', 'D', 'D', 'D', 'D', 'D', 'D', 'A7', 'A7', 
+        'D', 'D', 'D', 'D', 'D', '_'
+    ]
+    
+    test_style = "Pop Ballad" 
+
+    # 2. 调用主函数
+    print(f"\n--- 🚀 开始渲染 {melody_filename} 的伴奏 ({test_style}) ---")
+    print(f"--- 📂 尝试从路径: {melody_file_path} 读取文件 ---") 
+    
+    try:
+        accompaniment_part = render_accompaniment_from_raw_inputs(
+            melody_file_path,
+            example_chord_sequence, 
+            test_style
+        )
+        
+        # 3. 检查和输出结果
+        if len(accompaniment_part.flat.notesAndRests) > 0:
+            print("\n--- ✅ 伴奏 Part 成功生成 ---")
+            
+            score = m21.stream.Score()
+            score.insert(0, m21.metadata.Metadata())
+            score.metadata.title = f"Accompaniment for {test_style}"
+            score.insert(0, accompaniment_part) 
+            
+            output_midi_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"accompaniment_output_{test_style.replace(' ', '_')}.mid")
+            
+            # 【关键】: 使用 musicxml 模块来强制刷新 MIDI 缓存，确保音高正确
+            score.write('midi', fp=output_midi_path)
+            
+            print(f"伴奏已保存到: {output_midi_path}")
+            
+        else:
+            print("\n--- ⚠️ 伴奏 Part 为空，检查文件路径、和弦数据或日志中的错误 ---")
+            
+    except m21.converter.ConverterException:
+        print(f"\n--- ❌ 错误：无法找到或解析文件 {melody_filename} ---")
+        print(f"请检查文件是否存在于路径: {melody_file_path}。")
+    except Exception as e:
+        print(f"\n--- ❌ 发生其他错误: {e} ---")
