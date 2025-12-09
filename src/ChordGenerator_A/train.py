@@ -1,25 +1,3 @@
-# import torch
-# import torch.nn as nn
-# import torch.optim as optim
-# from torch.utils.data import DataLoader
-# import random
-# import numpy as np
-# import os
-# import time
-# import sys 
-
-# # 导入配置和模块
-# try:
-#     from src.ChordGenerator_A import config
-#     from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
-#     from src.ChordGenerator_A.dataset import MusicDataset, collate_fn
-#     from src.ChordGenerator_A.utils import load_vocab
-# except ImportError:
-#     import src.ChordGenerator_A.config as config
-#     from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
-#     from src.ChordGenerator_A.dataset import MusicDataset, collate_fn
-#     from src.ChordGenerator_A.utils import load_vocab
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -28,12 +6,23 @@ import random
 import numpy as np
 import os
 import time
-# 2. 导入模块
-import config # 同级
-from model import Encoder, Decoder, Seq2Seq # 同级
-from dataset import MusicDataset, collate_fn # 同级
-from utils import load_vocab # 同级
+import sys
+# 强行把根目录加入 sys.path
+# 1. 获取所在的目录 (src/ChordGenerator_A)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 往上跳两级，找到根目录 (src -> Root)
+project_root = os.path.dirname(os.path.dirname(current_dir))
+# 3. 加入路径
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+    print(f"🔧 已将根目录挂载: {project_root}")
+
+# ✅ 统一引用：全部基于 src 根路径
 from src import path
+from src.ChordGenerator_A import config
+from src.ChordGenerator_A import utils
+from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
+from src.ChordGenerator_A.dataset import MusicDataset, collate_fn
 
 # ================= 工具函数 =================
 
@@ -85,7 +74,7 @@ if __name__ == "__main__":
     set_seed(config.SEED)
     
     # 2. 加载数据
-    vocab = load_vocab(config.VOCAB_PATH)
+    vocab = utils.load_vocab(config.VOCAB_PATH)
     harmony_stoi = vocab['harmony']
     INPUT_DIM = len(vocab['melody'])
     OUTPUT_DIM = len(harmony_stoi)

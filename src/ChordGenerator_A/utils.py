@@ -11,14 +11,10 @@
 import json
 import os
 import torch
-from src import path
 
-try:
-    # 尝试作为包导入 (当从外部调用时)
-    from . import config
-except ImportError:
-    # 尝试直接导入 (当直接运行脚本时)
-    import config
+# ✅ 统一引用：从 src 开始
+from src import path
+from src.ChordGenerator_A import config
 
 # ================= 通用工具函数 =================
 

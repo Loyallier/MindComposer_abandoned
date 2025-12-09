@@ -1,26 +1,21 @@
-# import torch
-# import os
-
-# from src import path
-
-# # ================= 动态导入处理 =================
-# # 兼容根目录运行(python interface.py) 和 src目录运行(python inference.py)
-# try:
-#     from src.ChordGenerator_A import config
-#     from src.ChordGenerator_A import utils
-#     from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
-# except ImportError:
-#     # 如果找不到 src，说明可能是在 src 目录下直接运行的
-#     import src.ChordGenerator_A.config as config
-#     import src.ChordGenerator_A.utils as utils
-#     from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
-
 import torch
 import os
-import config # 导入 src/ChordGenerator_A/config.py
-import utils  # 导入 src/ChordGenerator_A/utils.py
-from model import Encoder, Decoder, Seq2Seq
+import sys
+# 强行把根目录加入 sys.path
+# 1. 获取所在的目录 (src/ChordGenerator_A)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 往上跳两级，找到根目录 (src -> Root)
+project_root = os.path.dirname(os.path.dirname(current_dir))
+# 3. 加入路径
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+    print(f"🔧 已将根目录挂载: {project_root}")
+
+# ✅ 统一引用：干干净净，没有 try-except
 from src import path
+from src.ChordGenerator_A import config
+from src.ChordGenerator_A import utils
+from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
 
 class AIComposer:
     def __init__(self):
@@ -126,7 +121,7 @@ if __name__ == "__main__":
         composer = AIComposer()
         
         # 测试用例
-        test_melody = ['60', '60', '67', '67', '69', '69', '67', '0']
+        test_melody = ['60', '_','_','_', '60','_','_','_', '67','_','_','_', '67','_','_','_', '69','_','_','_', '69','_','_','_', '67','_','_','_', '0']
         print(f"\n🎵 输入: {test_melody}")
         
         # 对比测试：Top-K=1 (死板) vs Top-K=3 (灵活)

@@ -1,18 +1,5 @@
-# # 文件: src/config.py
-
-# import os
-
-# # ================= 1. 路径配置 =================
-# # 这样写的好处是：无论你在哪里运行代码，路径都是相对于项目根目录的绝对路径
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# DATA_DIR = os.path.join(BASE_DIR, 'data', 'processed')
-# MODEL_DIR = os.path.join(BASE_DIR, 'models')
-
-# VOCAB_PATH = os.path.join(DATA_DIR, 'vocab.json')
-# DATASET_PATH = os.path.join(DATA_DIR, 'dataset_encoded.json')
-# MODEL_SAVE_PATH = os.path.join(MODEL_DIR, 'best_model.pth')
-
+import os
+# ✅ 统一引用：从 src 包导入 path
 from src import path
 
 # ---------------------------------------------------------
