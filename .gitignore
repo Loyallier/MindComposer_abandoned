@@ -1,5 +1,6 @@
 .vscode/
-src/__pycache__
+src/ChordGenerator_A/__pycache__
 verify_model.py
 test_melodies.txt
 tempCodeRunnerFile.py
+models/checkpoints

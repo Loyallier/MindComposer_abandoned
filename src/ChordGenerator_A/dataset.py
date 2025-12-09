@@ -7,13 +7,16 @@
 # try:
 #     from src import path
 # except ImportError:
-# import path
+#     import path
 
 import json
 import torch
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
+
+# ✅ 统一引用
 from src import path
+
 
 class MusicDataset(Dataset):
     def __init__(self, data_path):
