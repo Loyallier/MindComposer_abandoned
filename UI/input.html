@@ -9,6 +9,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
     <style>
+
+.input.upload {
+  position: relative;
+  overflow: hidden;
+}
+
+
+.fileInputReal {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
       :root {
         --bg-start: #0d1b3d;
         --bg-end: #08122b;
@@ -235,14 +249,15 @@
       </section>
       <section class="panel">
         <form id="melody">
-          <div class="field">
-            <div class="label">Upload File:</div>
-            <input id="file" type="file" accept=".mid,.midi,.wav,.mp3" style="display:none" />
-            <div class="input upload">
-              <button id="pick" class="pickBtn" type="button">CHOOSE FILE</button>
-              <span id="fileName" class="fileName">No file selected</span>
-            </div>
-          </div>
+<div class="input upload">
+
+  <input id="file" name="file" type="file" accept=".mid,.midi" class="fileInputReal" />
+
+
+  <button id="pick" class="pickBtn" type="button">CHOOSE FILE</button>
+  <span id="fileName" class="fileName">No file selected</span>
+</div>
+
           <div class="field">
             <div class="label">Tempo:</div>
             <div class="selectWrap">
@@ -444,21 +459,74 @@
       }
       setMode(modeInput.value, true);
       modeBtn.addEventListener('click', () => { setMode(modeInput.value === 'chord' ? 'melody' : 'chord', false); });
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const file = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
-        if (!file) {
-          statusEl.textContent = 'Please choose a file.';
-          return;
-        }
-        const mode = modeInput.value;
-        sessionStorage.setItem('mode', mode);
-        sessionStorage.setItem('pendingName', file.name);
-        sessionStorage.setItem('tempo', tempoSel.value);
-        sessionStorage.setItem('style', styleSel.value);
-        const target = mode === 'melody' ? 'thinking_melody.html' : 'thinking.html';
-        window.location.href = `${target}?mode=${mode}`;
-      });
+    form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const file = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+  if (!file) {
+    statusEl.textContent = 'Please choose a MIDI file.';
+    return;
+  }
+
+  const lowerName = file.name.toLowerCase();
+  if (!lowerName.endsWith('.mid') && !lowerName.endsWith('.midi')) {
+
+    statusEl.textContent = 'Only MIDI files (.mid, .midi) are supported.';
+    return;
+  }
+
+  const mode = modeInput.value;
+  const tempo = tempoSel.value;
+  const style = styleSel.value;
+
+
+  sessionStorage.setItem('mode', mode);
+  sessionStorage.setItem('pendingName', file.name);
+  sessionStorage.setItem('tempo', tempo);
+  sessionStorage.setItem('style', style);
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('style', style);
+  formData.append('mode', mode);
+
+  gen.disabled = true;
+  statusEl.textContent = 'Uploading and generating...';
+
+  try {
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || !data.success) {
+      const msg = data && data.message ? data.message : 'Generation failed.';
+      throw new Error(msg);
+    }
+
+
+    sessionStorage.setItem('resultReady', '1');
+    sessionStorage.setItem('resultAudioUrl', data.file_url);
+    sessionStorage.setItem('midiUrl', data.file_url);
+    sessionStorage.setItem('resultScoreUrl', data.file_url);
+    sessionStorage.setItem('chord_preview', JSON.stringify(data.chord_preview || []));
+    sessionStorage.setItem('detected_style', data.detected_style || '');
+    sessionStorage.setItem('final_style', data.final_style || '');
+
+    statusEl.textContent = 'Generation successful! Redirecting...';
+
+    const target = mode === 'melody' ? 'thinking_melody.html' : 'thinking.html';
+    window.location.href = `${target}?mode=${mode}`;
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = err.message || 'Generation failed. Please try again.';
+  } finally {
+    gen.disabled = false;
+  }
+});
+
 
       const svg = document.querySelector('svg.waves');
       const group = svg.querySelector('#waveGroup');
