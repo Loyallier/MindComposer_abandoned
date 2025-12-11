@@ -1,4 +1,3 @@
-
 X: 1
 T:Dance All Night
 % Nottingham Music Database
@@ -19,6 +18,7 @@ G/2E/2|"G"D/2B,/2D/2G/2 D/2B,/2D/2G/2|"C"E/2+CE++C/2 E/2 ++CE++CE+|
 "G"D/2B,/2D/2G/2 D/2B,/2D/2G/2|
 "C"E/2+CE++C/2 E/2 ++CE++CE+|"D"A/2B/2A/2F/2 D/2F/2A/2c/2|\
 "G"B/2+GB++G/2 B/2 ++GB+:|
+
 
 
 X: 2
@@ -42,6 +42,7 @@ F/2E/2|"D"DD D/2E/2F/2G/2|"D"AA Af/2e/2|"G"dB "D"AF|"Em"BE "A7"E/2G/2F/2E/2|
 "D"dc/2B/2 A/2G/2||
 
 
+
 X: 3
 T:Dennis Murphy's
 % Nottingham Music Database
@@ -53,6 +54,7 @@ d/2e/2|:"D"f/2g/2f/2e/2 d3/2B/2|AD FA|"Em"GE e3/2d/2|"A7"cB c/2B/2A|
 "D"f/2g/2f/2e/2 d3/2B/2|"D"AD FA|"Em"GE "A7"e3/2f/2|"D"ed d2::
 "D"Af f/2e/2f|"G"Bg g/2f/2g|"D"Af f/2e/2d|"A7"e/2f/2e/2d/2 BA|
 "D"Af f/2e/2f|"G"Bg g3/2a/2|"A7"ba gc|"D"ed d2:|
+
 
 
 X: 4
@@ -74,33 +76,6 @@ e/2d/2|"A"c/2e/2A/2e/2 c/2e/2A/2e/2|"A"c/2e/2a/2g/2 f/2e/2d/2c/2|\
 "D"d/2e/2f/2d/2 "A"e/2c/2B/2A/2|"E7"EG "A"A:|
 
 
-X: 5
-T:Dill Pickle Rag
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:G
-Bc ^c|:"G"d/2e/2g/2d/2 e/2g/2d/2e/2|g/2d/2e/2g/2 -g/2e/2d|\
-"Em"G/2A/2B/2G/2 A/2B/2G/2A/2|B/2G/2A/2B/2 -B/2A/2G|
-"D"D/2E/2F/2D/2 E/2F/2D/2E/2|"D"F/2D/2E/2F/2 -F/2E/2D|\
- [1"G"G/2F/2G/2E/2 -"E"E/2F/2G/2^G/2|"A"A/2^G/2A/2d/2 -"D"d/2B/2c/2^c/2:|
- [2"A"A/2^G/2A/2d/2 -"D"d/2B/2A|"G"G2 -G/2G/2F/2E/2|:"D"D_E =EF|\
-"G"Ge/2d/2 -d/2e/2d|"D"Fe/2d/2 -d/2e/2d|
-"G"Ge/2d/2 -d/2e/2d|"D"D/2A/2E/2A/2 =F/2A/2^F/2A/2|"G"Ge/2d/2 -d/2e/2d|\
- [1"A"A/2B/2^c/2A/2 B/2c3/2|"D"d2 -d/2G/2F/2E/2:|
- [2"D"d/2e/2f/2d/2 e/2f3/2|"G"g4|:\
-K:C
-"C"c/2A/2G/2c/2 A/2G/2E/2F/2|G/2E/2G/2A/2 -A/2G/2E|"G"D/2^C/2D/2G/2 -G/2E/2D|
-"C"C2 AB|\
-K:C
-"C"c/2A/2G/2c/2 A/2G/2E/2F/2|G/2E/2G/2A/2 -A/2G/2E|"D"A/2^G/2A/2d/2 -d/2B/2A|
-"G"G2 AB|\
-K:C
-"C"c/2A/2G/2c/2 A/2G/2E/2F/2|G/2E/2G/2A/2 -A/2G/2E|"G"D/2^C/2D/2G/2 -G/2E/2D|
-"C"C2 cB|"Am"AA/2B/2 c/2B/2c/2d/2|e/2^d/2e/2a/2 -a/2g/2e|\
-"D"d/2^c/2d/2g/2 -"G"g/2e/2d| [1"C"c3A/2B/2:|[2"C"c3z||
-
 
 X: 6
 T:Dinah
@@ -116,6 +91,7 @@ e|"A"aa "D"a/2b/2a/2f/2|"A/c+"ec -"E7/b"ce|"A"aa a/2b/2a/2e/2|\
 P:B
 e|"A"Ac A/2B/2c/2d/2|"A"ef/2e/2 c/2B/2A|"A"Ac A/2B/2c/2d/2|"D"AF -"E7"FE|
 "A"Ac A/2B/2c/2d/2|"A"ef/2e/2 c/2B/2A|"B7"B/2A/2B/2A/2 "E7"cB|"A"A3:|
+
 
 
 X: 7
@@ -141,24 +117,6 @@ P:B
 "E7"E/2G/2B/2G/2 "A"Az:|
 
 
-X: 8
-T:Dinners 2
-% Nottingham Music Database
-S:Wolfstone Arr Hamish, via EF
-M:4/4
-L:1/4
-K:D
-P:A
-|:"D"df/2d/2 "A7"c/2d/2e/2c/2|"D"d/2e/2f/2d/2 A/2d/2B/2A/2|\
-"G"G/2B/2B/2B/2 "D"A/2d/2f/2d/2|"Em"g/2f/2e/2d/2 "A7"c/2d/2e/2c/2|
-"D"df/2d/2 "A7"c/2d/2e/2c/2|"D"d/2e/2f/2d/2 A/2d/2B/2A/2|\
-"G"G/2B/2B/2B/2 "D"A/2d/2d/2d/2|[1"A7"c/2d/2e/2c/2 "D"d2:|[2"A7"c/2d/2e/2c/2 "D"d|
-P:B
-f/2e/2|"Bm"f/2B/2B/2B/2 d/2c/2B/2c/2|"A7"A/2a/2a/2g/2 a/2g/2f/2e/2|\
-"Bm"f/2B/2B/2B/2 "E7"d/2c/2B/2c/2|"A7"A/2a/2a/2g/2 a/2g/2f/2e/2|
-"D"df/2d/2 "A7"c/2d/2e/2c/2|"D"d/2e/2f/2d/2 A/2d/2B/2A/2|\
-"G"G/2B/2B/2B/2 "D"A/2d/2d/2d/2|"A7"c/2d/2e/2c/2 "D"d:|
-
 
 X: 9
 T:Dixie Hoedown
@@ -181,6 +139,7 @@ d|"G"+B3g/2++Bg+|"Bm"+d3f/2++df/2+|"C"e3/2d/2 cA|"G"Bd3|"D"DD/2D/2 FF/2F/2|\
 "G"GG/2G/2 G/2||
 
 
+
 X: 10
 T:B. Variation
 % Nottingham Music Database
@@ -198,6 +157,7 @@ K:G
 "G"GG/2G/2 G||
 
 
+
 X: 11
 T:Djatchko Kolo
 % Nottingham Music Database
@@ -209,6 +169,7 @@ K:D
 "A7"AG GG|"D"AF FF|"A7"AG GG|"D"AF FF|"D"D/2E/2F "A7"FE|"D"D/2E/2F "A7"FE|
 "D"D/2E/2F "A7"FE|"D"D2 D2|"D"D/2E/2F "A7"FE|"D"D/2E/2F "A7"FE|\
 "D"D/2E/2F "A7"FE|"D"D2 D2:|
+
 
 
 X: 12
@@ -228,6 +189,7 @@ A|"D"d/2e/2f/2g/2 a/2f/2d/2f/2|a/2f/2d/2f/2 a(g/2f/2)|\
 (3"D"f/2g/2f/2(3e/2f/2e/2 "G"d/2B/2A/2G/2|(3"A7"F/2G/2F/2(3E/2F/2E/2 "D"D:|
 
 
+
 X: 13
 T:The Doodler's Hornpipe
 % Nottingham Music Database
@@ -245,6 +207,7 @@ D/2C/2|"G"B,/2D/2G/2D/2 B,/2D/2G/2D/2|"C"C/2E/2G/2E/2 C/2E/2G/2E/2|\
 "D"D/2F/2A/2B/2 "D7"c/2A/2F/2A/2|"G"GG G:|
 
 
+
 X: 14
 T:Dornoch Links
 % Nottingham Music Database
@@ -258,6 +221,7 @@ a/2f/2|"A"eA cB/2c/2|"A"eA "D"Aa/2f/2|"A"ec cB/2c/2|"Bm"fB "E7"Bc/2d/2|
 P:B
 g|"A"a2 "E7"ef/2g/2|"A"ae/2d/2 cB/2A/2|"A"aa e/2f/2e/2c/2|"Bm"dB "E7"Be|
 "A"a2 "E7"ef/2g/2|"A"a/2e/2f/2d/2 cB/2A/2|"D"df "E7"Be/2d/2|"A"cA A:|
+
 
 
 X: 15
@@ -283,6 +247,7 @@ P:D
 "A""F#m"ec ec|"D""Bm"fd fd|"E7"e/2a/2g/2f/2 e/2d/2c/2B/2|"A"Ac A:|
 
 
+
 X: 16
 T:Down The Road
 % Nottingham Music Database
@@ -299,6 +264,7 @@ AG G/2A/2B/2c/2|
 "D7"A3/2F/2 DD|"D7"AA A/2B/2c/2B/2|AA A/2B/2c/2A/2|"G"dB GA||
 "G"B3/2c/2 dd|"C"cB "Am"AG|"D7"FD cA|"D7"F3D|"C"E2 "G"D2|"Em"E2 "Bm"D2|\
 "Am"GG "D7"F/2G/2A/2F/2|"G"G4||
+
 
 
 X: 17
@@ -320,6 +286,7 @@ P:D.S.
 F/2D/2||
 
 
+
 X: 18
 T:The Drummer
 % Nottingham Music Database
@@ -336,6 +303,7 @@ A/2B/2|"C"cc/2e/2 "G"dd/2e/2|"C"cc/2e/2 "G"d/2B/2G/2B/2|"C"cc/2e/2 "G"dd/2f/2|\
 P:B alt
 A/2B/2|"C"c/2B/2c/2e/2 "G"d/2c/2d/2e/2|"C"c/2B/2c/2e/2 "G"d/2B/2G/2B/2|\
 "C"c/2B/2c/2e/2 "G"d/2c/2d/2f/2|"E7"e/2d/2c/2B/2 "Am"A||
+
 
 
 X: 19
@@ -357,6 +325,7 @@ e/2|"Am"a2 ea|"Am"e/2d/2e/2^f/2 ga|"G"G/2G/2G/2B/2 d3/2e/2|"G"d/2B/2G/2B/2 de|
 ||
 
 
+
 X: 20
 T:Drunken Sailor
 % Nottingham Music Database
@@ -370,6 +339,7 @@ d/2B/2|"D"AA/2B/2 AA/2B/2|"D"Ad dc|"Em"BB/2c/2 BB/2c/2|
 P:B
 d/2e/2|"D"f2 "D7"f2|"G"eB B2|"Em"BB/2c/2 BB/2c/2|"Em"dA "A7"A2|"Bm"f2 f2|\
 "Em"eB B2|"Em"Be "A7"Bc|"D"d3:|
+
 
 
 X: 21
@@ -391,22 +361,6 @@ A|"D"dA "A7"G/2F/2E/2G/2|"D"F"/@>.5A7"A2d/2e/2|"D"f/2e/2d/2f/2 "A7"ec|"D"d3A|\
 "D"d3||
 
 
-X: 22
-T:Dubuque
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:D
-"D"A,/2B,/2D/2E/2 DD/2E/2|FB/2F/2 A2|"G"B3/2d/2 B/2A/2F/2E/2|\
-"D"D/2E/2F/2D/2 "A"E/2D/2B,|
-"D"A,/2B,/2D/2E/2 DD/2E/2|"D"FB/2F/2 A2|"G"B3/2d/2 B/2A/2F/2E/2|\
-"A"D/2E/2F/2E/2 "D"D2::
-"D"F/2AF/2 AB/2A/2|F/2E/2D/2F/2 E/2D/2B,|"G"G/2BG/2 BG/2A/2|\
-"G"B/2A/2G/2B/2 A/2G/2E/2D/2|
-"D"F/2AF/2 AB/2A/2|"D"F/2E/2D/2F/2 "Bm"E/2D/2B,|"D"F/2E/2D/2F/2 E/2D/2B,|\
-[1"A"A,/2B,/2D/2E/2 "D"F/2E/2D:|[2"A"A,/2B,/2D/2E/2 "D"D2||
-
 
 X: 23
 T:Durham Rangers
@@ -427,6 +381,7 @@ a/2g/2|"D"f/2e/2f/2g/2 a/2f/2d/2f/2|"A7"e/2d/2c/2B/2 "D"A/2d/2f/2a/2|\
 "G"B/2c/2d/2B/2 "A7"A/2B/2A/2G/2|"D"FD D:|
 
 
+
 X: 24
 T:East Neuk of Fife
 % Nottingham Music Database
@@ -443,104 +398,6 @@ P:B
 d/2c/2|"G"BG Gd/2c/2|"G"BG Ge/2d/2|"C"cA Af/2g/2|"D7"aA AB/2c/2|
 "G"dG BG|"C"g/2f/2g/2e/2 "G"dB|"D"A/2B/2c/2d/2 B/2c/2A/2B/2|"Em"GE E:|
 
-X: 25
-T:East Tennessee Blues
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:C
-ef ^f|:"C"g/2a/2g/2e/2 g/2a/2g/2e/2|g/2a/2g/2e/2 a/2g/2e/2d/2|\
-"F"c/2d/2c/2A/2 c/2d/2c/2A/2|c/2d/2c/2A/2 d/2c/2A/2F/2|
-"C"G/2^F/2G/2A/2 c/2B/2c/2d/2|"C"e/2^d/2e/2f/2 g/2a/2g/2e/2|\
- [1"D"d/2^c/2d/2e/2 ^f/2d/2e/2f/2|"G"g2 ef:|
- [2"F"f/2e/2d/2c/2 "G"B/2G/2A/2B/2|"C"c3e/2f/2|:"C"g2 -g/2a/2g|\
-e2 -e/2g/2e/2d/2|"F"c2 -c/2d/2c/2B/2|A2 -A/2c/2B/2A/2|
-"C"G/2^F/2G/2A/2 c/2B/2c/2d/2|"C"e/2^d/2e/2f/2 g/2a/2g/2e/2|\
-"D"d/2^c/2d/2e/2 ^f/2d/2e/2f/2|"G"g2 ef:|
-"F"f/2e/2d/2c/2 "G"B/2G/2A/2B/2|"C"c4||
-
-
-X: 26
-T:East Dene
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:Bb
-|:"Bb"D/2F/2F/2\
-%P:3
-B/2 B/2A/2B/2c/2|dB B/2c/2B/2A/2|"Eb"G/2A/2
-%P:3
-B/2=B/2 \
-%P:3
-c/2d/2c/2_B/2|"C7"A/2B/2G/2A/2 "F7"F/2G/2F/2E/2|"Bb"D/2F/2F/2
-%P:3
-B/2 B/2A/2B/2c/2|dB B/2c/2B/2A/2|"Eb"G/2A/2B/2G/2 "F7"A/2B/2c/2A/2|"Bb"\
-%P:3
-[1 Bd Bz:|[2 Bd B ^c|
-%P:4
-"Dm"d/2^c/2=c/2=B/2 \
-%P:4
-"Gm"_B/2A/2G/2F/2|"Eb"G/2F/2G/2B/2 "Bb"F2|"Eb"
-%P:3
-E/2F/2G/2E/2 "Bb"D/2E/2F/2D/2|"C7"C2 -"F7"C/2\
-%P:3
-B/2c/2\
-%P:3
-^c/2|"Dm"d/2^c/2=c/2=B/2 "Gm"_B/2A/2G/2F/2|"Eb"G/2F/2G/2B/2 "Bb"F2|\
-"Eb"G/2A/2B/2G/2 "F7"A/2B/2c/2A/2|"Bb"Bd B"A7"
-%P:3
-^c|"Dm"d/2^c/2=c/2=B/2 "Gm"_B/2A/2G/2F/2|"Eb"G/2F/2G/2B/2 "Bb"F2|\
-"Gm"G/2A/2B/2=B/2 "C7"
-%P:3
-c/2d/2c/2_B/2|"F7"A/2B/2G/2A/2 F/2G/2F/2E/2|"Bb"D/2F/2F/2B/2 B/2A/2B/2c/2|\
-dB B/2c/2B/2A/2|"Eb"G/2A/2B/2G/2 "F7"A/2B/2c/2A/2|"Bb"Bd B||
-
-
-X: 27
-T:East Hill Breakdown
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:C
-G|"C"c/2c/2c/2c/2 cd|e/2e/2e/2e/2 ef|"C"ag ef|"Dm"d3G|
-"G"B/2B/2B/2B/2 Bc|d/2d/2d/2d/2 de| [1"G"gf "G7"d^d|"C"e3:|
- [2"G7"gf dB|"C"c2 eg||"C"c'3/2c'/2 c'c'|c'3g|ag fe|"Dm"d3g|"G"b3/2b/2 bb|b3g|\
-"G"ag "G7"fd|
-"C"e3g|"C"c'3/2c'/2 c'c'|"Am"c'3g|"Dm"ag fe|"G"d3g|"G"b3/2b/2 bb|b3g|\
-"G"ag "G7"fd|"C"c3||
-
-
-X: 28
-T:East Tennessee Blues
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:C
-ef ^f|:"C"g/2a/2g/2e/2 g/2a/2g/2e/2|g/2a/2g/2e/2 g/2a/2g/2e/2|
-"F"c/2d/2c/2A/2 c/2d/2c/2A/2|c/2d/2c/2A/2 c/2d/2c/2A/2|\
-"C"G/2A/2G/2F/2 E/2D/2E/2F/2|
-"C"G/2A/2c/2d/2 "Am"e/2f/2g/2e/2| [1"D"d/2^c/2d/2e/2 ^f/2d/2e/2f/2|\
-"G"g/2a/2g/2e/2 ge/2f/2:|
- [2"Dm"f/2e/2d/2c/2 "G"B/2G/2A/2B/2|"C"[ce][c/2e/2][c/2 e/2 ][ce]||
-[ce]|"C"[c2-g2-][c/2g/2][c/2a/2][cg]|[c2 e2][c2e2]|\
-"F"[F2-c2-][F/2c/2][F/2d/2][Fc]|
-[F2A2][F2A2]|"C"G/2A/2G/2F/2 E/2D/2E/2F/2|"C"G/2A/2c/2d/2 "Am"e/2f/2g/2e/2|
-"D"d/2^c/2d/2e/2 ^f/2d/2e/2f/2|"G"g/2a/2g/2e/2 ge/2f/2|\
-"C"g/2a/2g/2e/2 g/2a/2g/2e/2|
-P:4 0
-[e2 e2 ]\
-P:4 0
-[e2e2]|"F"c/2d/2c/2A/2 c/2d/2c/2A/2|\
-P:4 0
-[A2A2]
-P:4 0
-[A2A2]|"C"G/2A/2G/2F/2 E/2D/2E/2F/2|"C"G/2A/2c/2d/2 "Am"e/2f/2g/2e/2|\
-"Dm"f/2e/2d/2c/2 "G"B/2G/2A/2B/2|"C"+ce++c/2e/2++c/2 e/2 ++ce+||
-
 
 X: 29
 T:Egan's
@@ -555,6 +412,7 @@ K:D
 P:mordant
 "Em"e/2d/2 "A""a"B/2" ""g"A/2|"D""f#"d "Bm"e3/4f/4|"Em"e/2d/2 "A"B/2A/2|\
 "D"f/2a/2 " ""f#"f/2e/2|"Em"e/2d/2 "A""a"B/2" ""g"A/2|"D""f#"d "Em"e3/4f/4|"A"e/2d/2 "D"d:|
+
 
 
 X: 30
@@ -582,6 +440,7 @@ K:E
 "E""(b)"ge/2c/2 -"C#m"c/2B/2c/2e/2|"F#7"fe/2=g/2 -"B7"g/2e/2f|"E"e4||
 
 
+
 X: 31
 T:Liza Jane
 % Nottingham Music Database
@@ -595,6 +454,7 @@ D/2E/2|"D"FF "A7"ED|"D"FA A3/2A/2|"G"BA -"D"AF|"Em""C"A2 -"A7""C"A2|\
 P:B
 A|"D"dd2A|"G""Em"B2 "D"A2|"G""Em"BA -"D""D"AF|"Em""C"A2 -"A7""C"A2|"D"dd2A|\
 "G""Em"B2 "D"A2|"Em"FF -"A7"FE|"D"D3:|
+
 
 
 X: 32
@@ -614,6 +474,7 @@ F/2E/2|"D"DD/2E/2 FE/2D/2|F/2AF/2 A3/2A/2|"G"B/2A/2B/2c/2 "D"d/2B/2A/2G/2|\
 "D"FD D2:|
 
 
+
 X: 33
 T:Erlegh March
 % Nottingham Music Database
@@ -625,6 +486,7 @@ A|"D"d2 D2|GF ED|FA2B|"A7"A2 Bc|"Bm"d2 e2|"E7"gf ed|"A7"e2 A2|
 A2 Bc|"D"d2 D2|GF ED|"G"GF GB|d2 cB|"D"A2 DF|GF ED|"A7"E4|
 "D"D2 F2|"D"A2 FA|dc BA|"Em"B2 GB|"A7"A2 de|"D"f2 d2|"Bm"a2 gf|"Em"e4-|
 "A7"e2 fg|"D"a2 A2|"D7"=c2 BA|"G"BG Bd|g2 fe|"D"f2 A2|"Em"gf ed|"A7"e4|"D"d3||
+
 
 
 X: 34
@@ -643,6 +505,7 @@ GD BG|"D"A3/2F/2 DF|"Am"AB "D7"cd|"G"B2 G3/2G/2|"G"GB "G7"cd||
 "G"G||
 
 
+
 X: 35
 T:Eyes of Blue
 % Nottingham Music Database
@@ -656,6 +519,7 @@ K:C
 "A7"A^F =FE|"D7"AB A3/2D/2|"D7"AB A2|"G7"Bd BG|"G7"FE D^D|"C"EG E2|
 "E7"E^G E3/2E/2|"A7"EA EA|"A7"E/2A3/2 EA|"D7"cA c/2A3/2|"G7"G2 A2|"C"cG/2AG/2E\
 |"C"C4||
+
 
 
 X: 36
@@ -672,6 +536,7 @@ K:A
 P:B
 c/2d/2|"A"e3/2f/2 ec/2d/2|"A"ea "D"gf|"A"e3/2f/2 ec|"Bm"dc "E7"BA|\
 "A"e3/2f/2 ec/2d/2|"A"ea a2|"D"dc/2B/2 "E7"cB|"A"A2 A:|
+
 
 
 X: 37
@@ -692,6 +557,7 @@ d|(3"Em"e/2g/2e/2B B/2d/2e/2f/2|g/2a/2g/2f/2 e/2d/2e/2f/2|"Em"eB BB/2^c/2|\
 "G"gg "D"ff|"G"e/2d/2B/2c/2 "D"dd/2e/2|"D"d/2B/2A/2F/2 "G"G/2A/2B/2c/2|\
 "D"d/2B/2A/2F/2 G/2F/2E/2D/2|
 "Em"B,E E/2F/2G/2A/2|Be/2f/2 e/2d/2e/2f/2|"Em"eB "D"B/2A/2G/2F/2|"Em"E3||
+
 
 
 X: 38
@@ -715,6 +581,7 @@ P:B var
 "D"ff/2d/2 "G"g/2f/2e/2d/2|"A7"c/2A/2B/2c/2 "D"d/2e/2f/2g/2||
 
 
+
 X: 39
 T:Far From Home
 % Nottingham Music Database
@@ -734,6 +601,7 @@ d/2|"Em"gg/2e/2 "Bm"ff/2d/2|"Em"e/2d/2e/2f/2 "Bm"e/2d/2B|"Em"g/2e/2d/2B/2 GB|\
 |"D7"B/2G/2A/2F/2 "G"G3/2:|
 
 
+
 X: 40
 T:Waiting For The Federals
 % Nottingham Music Database
@@ -747,30 +615,6 @@ K:G
 "G"g/2a/2b/2a/2 "Em"ge|"D7"d3/2A/2 "G"B/2A/2G|"C"A/2B/2A/2G/2 "D7"E(3D/2E/2F/2\
 |"G"G2 -G2:|
 
-
-X: 41
-T:Fiddling Around
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:C
-g|"A"a/2g/2e/2a/2 g/2e/2a/2g/2|e/2a/2g/2e/2 a/2g/2e|\
-"D"d/2c/2A/2d/2 c/2A/2d/2c/2|
-A/2d/2c/2A/2 d/2c/2A|"G"G/2F/2D/2G/2 F/2D/2G/2F/2|\
-"G"D/2G/2F/2D/2 G/2F/2D/2B,/2|
-"C"C/2B,/2C/2D/2 E/2G/2A/2B/2|c/2B/2c/2d/2 c/2A/2G|\
-"A"a/2g/2e/2a/2 g/2e/2a/2g/2|
-e/2a/2g/2e/2 a/2g/2e|"D"d/2c/2A/2d/2 c/2A/2d/2c/2|A/2d/2c/2A/2 d/2c/2A/2_B/2|
-"G"B/2B/2[g/2B/2]B/2 B/2[a/2B/2]B/2B/2|\
-[b/2B/2]B/2B/2[a/2 B/2 ]B/2B/2[g/2B/2]B/2|"C"[c2 E2 ]c/2B/2c/2d/2|[c3E3]
-|:"A"^c/2c/2[a/2c/2]c/2 c/2[a/2c/2]c/2c/2|\
-[f/2^c/2]c/2c/2[f/2 ^c/2 ]c/2c/2[f/2^c/2]c/2|"D"d/2d/2[f/2d/2]d/2 d/2[f/2d/2]d/2d/2|
-c/2c/2[^f/2c/2]c/2 c/2[^f/2c/2]c/2c/2|"G"B/2B/2[g/2B/2]B/2 B/2[a/2B/2]B/2B/2|\
-"C"[b/2B/2]B/2B/2[a/2 B/2 ]B/2B/2[g/2B/2]B/2|
- [1"C"c/2c/2[g/2c/2]c/2 c/2[a/2c/2+c/2c/2|\
-[g/2c/2]c/2c/2[a/2 c/2 ]c/2c/2[g/2c/2]c/2:|
- [2"C"[c2 E2 ]c/2B/2c/2d/2|[c4E4]||
 
 
 X: 42
@@ -790,18 +634,6 @@ d|"G"g/2f/2g/2a/2 "D7"b/2a/2g/2f/2|"Em"g/2f/2e/2d/2 c/2B/2A/2G/2|\
 "Am"c/2A/2B/2G/2 "C"A/2G/2E/2G/2|"D7"D/2G/2G/2F/2 "G"G:|
 
 
-X: 43
-T:The First Frost
-% Nottingham Music Database
-S:John Goodacre 1983, via PR
-M:4/4
-L:1/4
-K:D
-"D"FF AF|"A7"GB/2G/2 EE|"D"FD CD|"A7"E/2F/2G/2E/2 "D"A2|"Bm"FF AF|\
-"Em"GB/2G/2 "A7"EE|"D"FD "A7"EC|"D"D2 D2::
-"D"dd AB|"A7"cB A2|"D"dd AB|"A"cd/2c/2 "G"BA/2G/2|"D"FF AF|
-"Em"GB/2G/2 "A7"EE|"D"FD "A7"EC| [1"D"D2 D2:|[2"D"DF/2A/2 d2||
-
 
 X: 44
 T:The First Frost - Second part
@@ -815,22 +647,6 @@ K:D
 "D"D2 F2|"A7"G2 CE|"D"D2 F2|"A"A2 "G"GF/2E/2|"D"D2 F2|"Em"E2 "A7"C2|\
 "D"DF/2A/2 "A7"c/2B/2A|"D"dA/2F/2 D2:|
 
-
-X: 45
-T:Fishers's Hornpipe
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:D
-B/2c/2|:"D"d/2A/2F/2D/2 "G"G/2B/2A/2G/2|"D"F/2E/2D/2F/2 "G"G/2B/2A/2G/2|\
-"D"F/2D/2F/2D/2 "G"G/2B/2A/2G/2|"D"F/2G/2A/2F/2 "A"EB/2c/2|
-"D"d/2A/2F/2D/2 "G"G/2B/2A/2G/2|"D"F/2E/2D/2F/2 "G"G/2B/2A/2G/2|\
-"D"F/2G/2A/2d/2 "A"c/2d/2e/2c/2| [1"D"d/2B/2A/2F/2 DB/2c/2:|
- [2"D"d/2B/2A/2F/2 Dc/2d/2|:"A"e/2c/2A/2c/2 e/2g/2f/2e/2|\
-"D"f/2d/2A/2d/2 f/2a/2g/2f/2|"A"e/2c/2A/2c/2 e/2g/2f/2e/2|
-"D"dB AA/2_B/2|"G"B/2G/2D/2G/2 B/2d/2c/2B/2|"D"A/2F/2D/2F/2 A_B|\
-"G"B/2G/2B/2d/2 "A"c/2d/2e/2c/2| [1"D"d/2B/2A/2F/2 Dc/2d/2:|[2"D"d/2B/2A/2F/2 D||
 
 
 X: 46
@@ -848,6 +664,7 @@ c/2d/2|"A"e/2c/2A/2c/2 e/2f/2g/2e/2|"D"f/2e/2d/2f/2 e/2d/2c/2d/2|\
 "A"e/2c/2A/2c/2 e/2f/2g/2e/2|"D"f/2e/2d/2B/2 Ad/2c/2|
 "G"B/2G/2D/2G/2 B/2d/2c/2B/2|"D"A/2F/2D/2F/2 A/2F/2d/2A/2|\
 "Em"B/2c/2d/2B/2 "A"c/2d/2e/2c/2|"D"df d:|
+
 
 
 X: 47
@@ -868,20 +685,6 @@ f/2g/2|"D"aa/2f/2 aa/2f/2|"D"a/2b/2a/2f/2 dd|"A7"c/2d/2e/2f/2 g/2a/2g/2e/2|\
 "D"aa/2f/2 aa/2f/2|"D"a/2b/2a/2f/2 dd|"A7"c/2d/2e/2f/2 g/2a/2g/2e/2|"D"df d:|
 
 
-X: 48
-T:Flop-eared Mule
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:G
-|:"G"b2 g2|d/2e/2d/2B/2 GG|"D7"F/2G/2A/2B/2 c/2d/2c/2A/2|"G"G/2A/2B/2c/2 dd|
-bb gg|"G"d/2e/2d/2B/2 GG|"D7"F/2G/2A/2B/2 c/2d/2e/2f/2|[1"G"g2 g2:|[2"G" g2 g|
-K:D
-f/2g/2|:"D"aa/2f/2 aa/2f/2|a/2b/2a/2f/2 dd|"A7"c/2d/2e/2f/2 g/2a/2g/2e/2|\
-"D"d/2e/2f/2g/2 af/2g/2|
-"D"aa/2f/2 aa/2f/2|a/2b/2a/2f/2 dd|"A7"A/2c/2e/2f/2 g/2a/2g/2e/2|"D"df d2:|
-
 
 X: 49
 T:Flowers of Edinburgh
@@ -897,6 +700,7 @@ D|"G"GG "D/a"BG/2B/2|"G/b"dB "C"g3/2e/2|"G"dB B/2A/2G/2A/2|"Em""C"BG "D7""D"ED\
 P:B
 f|"Em"g2 "B7"f3/2e/2|"Em"Be "B7"ee/2f/2|"Em"gg "B7"f/2a/2g/2f/2|"Em"Be "D7"e2|
 "G"d/2B/2G/2B/2 dd|"C"e/2d/2e/2f/2 ge|"G/d"dB "D7"B/2A/2G/2A/2|"G"BG G:|
+
 
 
 X: 50
@@ -918,6 +722,7 @@ d|"G"g/2f/2g/2e/2 g/2b/2a/2g/2|"D"f/2d/2f/2g/2 f/2a/2g/2f/2|\
 "Em"d/2c/2B/2A/2 "D7"G/2F/2G/2A/2|"G"BG G:|
 
 
+
 X: 51
 T:Foot and Fiddle
 % Nottingham Music Database
@@ -931,6 +736,7 @@ e|"A"ae "E7"c/2d/2e/2g/2|"A"ae c3/2e/2|"A"ae A/2B/2c/2d/2|"Bm"cB "E7"B3/2e/2|
 P:B
 e|"A"Ac e/2d/2e/2f/2|"Bm"ed d3/2c/2|"E7"Bd gf/2g/2|"A"fe "E7"e2|
 "A"Ac e/2d/2e/2f/2|"Bm"ed d3/2c/2|"E7"Bd gf/2g/2|"A"ba a:|
+
 
 
 X: 52
@@ -949,6 +755,7 @@ G/2A/2G E2|"Ab"_ec c_A|"C"D/2E/2G G2|"Dm"A2 -A/2^G/2A|"G"B2 -B/2A/2B|"C"c4-|c4\
 ||
 
 
+
 X: 53
 T:Billy's Forty Footer
 % Nottingham Music Database
@@ -964,6 +771,7 @@ B/2c/2|d/2B/2e/2B/2 d/2B/2G/2B/2|d/2B/2e/2B/2 dB/2c/2|\
 d/2B/2e/2B/2 d/2B/2G/2B/2|A/2G/2A/2B/2 AG/2A/2|
 B/2c/2B/2A/2 B/2G/2A/2B/2|c/2d/2c/2B/2 c/2A/2B/2c/2|d/2g/2f/2e/2 d/2c/2B/2A/2|\
 BG G:|
+
 
 
 X: 54
@@ -985,6 +793,7 @@ A,-|"D"A,/2D/2F/2A/2 dd|"D"D/2F/2A/2d/2 "A7"fA,-|"D"A,/2D/2F/2A/2 dd|\
 "D"fd d:|
 
 
+
 X: 55
 T:Old French
 % Nottingham Music Database
@@ -1002,6 +811,7 @@ c/2d/2|"A"e/2f/2e/2d/2 cA|A/2E/2A/2c/2 ed/2c/2|"G"B/2=G/2B/2d/2 g/2f/2e/2d/2|\
 :|
 
 
+
 X: 56
 T:The Fruits Of Newbury - A New Bourree
 % Nottingham Music Database
@@ -1013,6 +823,7 @@ K:D
 |"A7"A2 Bc|"Bm"d3/2c/2 BF|"Em"G2 G2::
 "D"AF "G"BG|"D"A/2B/2A/2G/2 F/2E/2D|"D"AF "G"BG/2F/2|"A7"E2 E2|"D"AF "G"BG|\
 "D"A/2B/2A/2G/2 F/2E/2D|"D"FA "A7"G/2E/2C|"D"D2 D2:|
+
 
 
 X: 57
@@ -1031,6 +842,7 @@ Bc |"G"dd -"C"de|"G"d4|"G"BB -"C"Bc|"G"B4|"D7"A2 ^G2|"D7"A2 B2|"G"GG -"C"GE|\
 |"G"G2 ||
 
 
+
 X: 58
 T:Grand Old Duke of York
 % Nottingham Music Database
@@ -1047,6 +859,7 @@ d/2c/2|"Bm"BB cd|"F#7"e3/2e/2 dc|"Bm"BB cd|"F#7"ef/2e/2 dc|
 "Bm"BB cd|"F#7"ef/2e/2 "Bm"de/2d/2|"E7"cd/2c/2 Bc/2B/2|"A7"AA B\
 P:D.S.
 c||
+
 
 
 X: 59
@@ -1072,6 +885,7 @@ d/2c/2|"G"Bg/2f/2 "C"ee/2d/2|"Am"d/2c/2B/2c/2 "D7"Ad/2c/2|\
 "G"dd/2d/2 dg|"Em"dd/2d/2 dg|"Am"e/2d/2c/2B/2 "D7"d/2c/2B/2A/2|"G"GG G||
 
 
+
 X: 60
 T:All The Way To Galway
 % Nottingham Music Database
@@ -1086,22 +900,6 @@ P:B
 A|"D"d3/2e/2 fd|"A"cA A2|"G"BG G/2A/2B/2G/2|"D"BA "A7"A2|"D"d3/2e/2 fd|\
 "A"ca a3/2a/2|"G"ba "A7"ge|"D"d3:|
 
-
-X: 61
-T:Gaspe Reel
-% Nottingham Music Database
-S:French Canadian, via PR
-M:4/4
-L:1/4
-K:D
-d/2e/2|:"D"fe/2f/2 ed|d/2A/2B/2d/2 BA|"G"g(3f/2g/2f/2 "Em"ed|"A"B/2A/2B/2c/2 BA\
-|
-"D"fe/2f/2 ed|d/2A/2B/2d/2 BA|"G"g(3f/2g/2f/2 "Em"ed| [1"A"B/2A/2B/2c/2 "D"de\
-:|
- [2"A"B/2A/2B/2c/2 "D"df|:"A"ef gf/2e/2|"D"f/2e/2f/2g/2 af|\
-"A"ee/2f/2 g/2f/2e/2d/2|"G"c/2A/2B/2c/2 "D"BA|
-"A"e/2c/2e/2f/2 g/2f/2e/2g/2|"D"f/2e/2f/2g/2 ag/2f/2|\
-"A"e/2c/2e/2f/2 g/2f/2e/2d/2| [1"A"c/2A/2B/2c/2 "D"df:|[2"A"c/2A/2B/2c/2 "D"d||
 
 
 X: 62
@@ -1119,6 +917,7 @@ P:*
 "G"d2 d3/2e/2|"G"dB AG|"C"cd ef|"C"g2 fe|"G"d2 fe|"D7"d_d cA|"G"G4-|"G"G3||
 
 
+
 X: 63
 T:Sweet Georgia Brown
 % Nottingham Music Database
@@ -1132,6 +931,7 @@ K:G
 "A7"A2 "B7"B2|
 "Em"B2 B2|"B7"AF BB|"Em"B2 B2|"B7"AF BB|"G"DE GA|"B7"d^d "E7"eB|"A7"A2 "D7"dB|\
 "G"G3||
+
 
 
 X: 64
@@ -1151,6 +951,7 @@ K:C
 "Dm"d/2e/2 -"G7"e/2d/2|"C"c2|c2||
 
 
+
 X: 65
 T:Gilderoy
 % Nottingham Music Database
@@ -1168,6 +969,7 @@ e/2f/2|"C"gg/2a/2 g/2f/2e/2f/2|"C"g/2f/2e/2c/2 "G"dc/2d/2|\
 "Am"e/2a/2^g/2a/2 "E7"e/2d/2c/2B/2|"Am"cA A:|
 
 
+
 X: 66
 T:Gin I Were Where The Gadie Rins
 % Nottingham Music Database
@@ -1180,6 +982,7 @@ d/2B/2|"D"AA/2B/2 A/2B/2d/2e/2|ff fe/2d/2|"D"ff fe/2d/2|
 "G"aA "A7"AB/2c/2|"G"d3::
 c/2B/2|"D"AF FA|"A7"GE EG|"D"FD FA|"G"dc/2d/2 "A"e/2d/2c/2B/2|"D"AF FA|\
 "A7"GE EG|"D"FD "A7"FA|"D"d3:|
+
 
 
 X: 67
@@ -1199,6 +1002,7 @@ d|"G"GB/2d/2 g3/2f/2|"C"fe e2|"D7"DF/2A/2 f3/2e/2|"G"ed "D"d2|\
 "G""Em"GB/2d/2 g3/2f/2|"C""Am"fe eg|"D7"fa ef|"G"g3:|
 
 
+
 X: 68
 T:The Glendoan Fancy
 % Nottingham Music Database
@@ -1214,6 +1018,7 @@ K:Am
 "G"g/2a/2g/2e/2 de/2^f/2|"Em"g/2d/2e/2d/2 "A"^c/2d/2e|
 "Am"e/2a/2a/2b/2 "D7"a/2g/2e/2^f/2|"G"g/2a/2b/2g/2 "Am"a/2g/2e/2^f/2|\
 "G"g/2^f/2g/2e/2 "D"de/2^f/2|"Em"g/2^f/2g/2B/2 "Am"B/2A/2A:|
+
 
 
 X: 69
@@ -1232,6 +1037,7 @@ e/2d/2|"A"ce e=g|"G"d/2B/2=G/2B/2 de/2d/2|"A"ce ef/2g/2|\
 "A"ce e=g|"G"d/2B/2=G/2B/2 de/2d/2|"A"cA/2c/2 "G"B=G/2B/2|"A"A3:|
 
 
+
 X: 70
 T:Green Mountain Petronella
 % Nottingham Music Database
@@ -1247,6 +1053,7 @@ B/2d/2|"G"gg "D"ff|"A"e/2g/2e/2^c/2 "D"d/2c/2d/2f/2|\
 "C"e/2d/2e/2f/2 "G"g/2f/2g/2e/2|"D7"c/2B/2A/2F/2 D/2G/2B/2d/2|
 "G"gg "D"ff|"A"e/2g/2e/2^c/2 "D"d/2c/2d/2f/2|"C"e/2d/2e/2f/2 "G"g/2f/2g/2e/2|\
 "D"c/2B/2A/2F/2 "G"G:|
+
 
 
 X: 71
@@ -1267,21 +1074,6 @@ a/2g/2|"D"f/2g/2a/2f/2 "G"g/2a/2b/2g/2|"A"e/2f/2g/2e/2 "D"f/2g/2a/2f/2|\
 "D"d/2c/2d/2e/2 d/2e/2f/2d/2|"A7"e/2d/2e/2f/2 e/2f/2g/2e/2|\
 "D"f/2a/2d/2f/2 "A7"e/2g/2c/2e/2|"D"df d:|
 
-
-X: 72
-T:Golden Slippers
-% Nottingham Music Database
-S:Trad, via EF
-M:4/4
-L:1/4
-K:D
-P:A
-d/2e/2|"D"ff f/2e/2d/2e/2|"D"ff "A7"fd/2e/2|"D"ff f/2e/2d/2e/2|
-"A7"fe ec/2d/2|"A7"ee e/2d/2c/2d/2|"A7"ee ec/2d/2|"A7"eg fe|"D"ed d:|
-P:B
-c/2B/2|:"D"A3d|"D7"fe dA|"G"B3e|"Em"gf "E7"ed|"A7"cc c/2B/2c/2d/2| [1"A7"e2 A2\
-|"D"d3/2c/2 "A7"de|"D"f2 "A7"a2:|
- [2"A7"e2 g2|"D"f3/2g/2 "A7"fe|"D"d2 d||
 
 
 X: 73
@@ -1306,6 +1098,7 @@ K:C
 "C"ee/2e/2 ee|"F"a2 gf|"Dm"fg/2f/2 "G7"ed|"C"c2 "D7"d2||
 
 
+
 X: 74
 T:Good-bye Girls
 % Nottingham Music Database
@@ -1319,6 +1112,7 @@ d|"G"GB d2|"Am"e/2ee/2 cA|"D7"AB (3c/2d/2c/2B/2c/2|"G"d3/2d/2 "D7"BG|"G"GB d2|\
 P:B
 d|"G"gg/2g/2 ga|"G"g2 d2|"F"=ff/2f/2 fg|"F"=f2 d2|"G"gg/2g/2 ga|"G"g2 d2|\
 "F"=fd cA|"G"G2 G:|
+
 
 
 X: 75
@@ -1339,6 +1133,7 @@ FA D/2E/2F/2G/2|"D"FA d/2e/2d/2c/2|"G"cB3|"G"Bd D/2E/2G/2A/2|Bd D/2E/2G/2A/2|
 "G"dg g/2d/2a/2g/2|"D"f/2e/2d/2e/2 fa|"G"g4||
 
 
+
 X: 76
 T:La Grande Chaine
 % Nottingham Music Database
@@ -1354,6 +1149,7 @@ B/2d/2|"C"gg/2f/2 e/2f/2g/2e/2|"G"dd B/2G/2B/2d/2|\
 "Am"c/2d/2c/2B/2 "D7"A/2D/2F/2A/2|"G"d/2e/2d/2c/2 "G7"B/2G/2B/2d/2|
 "C"gg/2f/2 e/2f/2g/2e/2|"Em"dd B/2G/2B/2d/2|"Am"c/2d/2c/2B/2 "D7"A/2D/2F/2A/2|\
 "G"G3/2A/2 G:|
+
 
 
 X: 77
@@ -1377,18 +1173,6 @@ e/2f/2|"C"gg/2f/2 e/2f/2g/2e/2|"G"dd B/2G/2B/2d/2|\
 "G"G2 G:|
 
 
-X: 78
-T:Grandpa's
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:D
-A/2G/2|"D"FA "A7"Bc|"D"d/2c/2d/2e/2 fa|"Em"gf "E7"ed|"A7"cB AG|
-"D"FA "A7"Bc|"D"d/2c/2d/2e/2 fa|"Em"gf "A7"eB/2c/2|[1"D"d3:|[2"D" d4
-|:"A"e/2c/2A e/2c/2A|"G"gf "A"e/2c/2A|"G"gf "E7"ed|"A7"cB AG|"D"FA "A7"Bc|\
-"D"d/2c/2d/2e/2 fa|"Em"gf "A7"eB/2c/2|"D"d3 z:|
-
 
 X: 79
 T:The Girl With The Green Hat On
@@ -1405,22 +1189,6 @@ c/2d/2|"A"eA e/2c/2d/2e/2|"D"fd fe/2f/2|"Em"gf ed|"A"cB Ac/2d/2|
 eA e/2c/2d/2e/2|"D"fd fe/2f/2|"Em"gf "A7"ec|"D"ed d:|
 
 
-X: 80
-T:Green Meadow
-% Nottingham Music Database
-S:via PR
-M:4/4
-L:1/4
-K:G
-(3D/2E/2F/2|"G"GG/2A/2 B/2G/2B/2d/2|"C"e/2f/2g/2e/2 "G"d/2B/2A/2G/2|\
-"Am"E/2A/2A/2G/2 A/2B/2A/2G/2|"Am"E/2A/2A/2G/2 "D7"A/2c/2B/2A/2|
-"G"G/2F/2G/2A/2 B/2G/2B/2d/2|"C"e/2f/2g/2e/2 "G"d/2B/2A/2G/2|\
-"C"E/2G/2G/2F/2 G/2A/2G/2E/2|"D7"D/2G/2G/2F/2 "G"G::
-g/2a/2|"G"bb/2g/2 "D7"a/2b/2a/2f/2|"C"g/2a/2g/2e/2 "G"dB/2d/2|\
-"Am"e/2a/2a/2g/2 a/2b/2a/2g/2|"Am"e/2a/2a/2g/2 "D7"ag/2a/2|
-"G"b/2a/2b/2g/2 "D7"a/2b/2a/2f/2|"C"g/2a/2g/2e/2 "G"dB/2d/2|\
-"C"e/2g/2g/2f/2 g/2a/2g/2e/2| [1"D7"d/2g/2g/2f/2 "G"g:|[2"D7"d/2g/2g/2a/2 g/2e/2d/2B/2||
-
 
 X: 81
 T:Greetwell
@@ -1433,6 +1201,7 @@ K:D
 "A7"BA GE|"D"F2 A2|"Bm"Bc2d|"E7"fe dB-|Bc dB|"A7"cd ^de-|ec BA||
 "D"dc df-|fe df|"F#"e2 c2-|c4|"G"B^A Bc|dc de|"F#"f4-|fB ^AB|
 "B7"gf ^dB|gf ^dB|"E7"fe dB-|B^A B=c|"A7"cB Ag-|gf e2|"D"d4-|d4||
+
 
 
 X: 82
@@ -1453,6 +1222,7 @@ B|"Em"Be e3/2d/2|"Em"B/2d/2e/2f/2 g/2f/2e/2d/2|"D"Ad d3/2B/2|\
 "Em"eB "D"gB|"Em"aB "B7"b3/2a/2|"Am"g/2f/2e/2d/2 "B7"B/2g/2f/2g/2|"Em"e2 e:|
 
 
+
 X: 83
 T:The Guillemot's Revenge
 % Nottingham Music Database
@@ -1470,6 +1240,7 @@ K:Gm
 "Gm""g"B/2c/2d " ""bb"d/2c/2B|"D7"A/2B/2c c/2B/2A|"Gm"GB G2:|
 
 
+
 X: 84
 T:Gyre And Gimble
 % Nottingham Music Database
@@ -1483,4 +1254,3 @@ F/2G/2|"D"A3/2G/2 FG|Ad fA|"Em"Bd gf|"A7"e/2f/2e/2d/2 cF/2G/2|
 "D"A3/2G/2 FG|Ad fA|"G"Bg "A7"f/2e/2d/2c/2|"D"d3::
 c/2d/2|"A"e3/2c/2 AA|"D"f3/2d/2 AA|"E7"^ge fg|"A7"ag fe|"D"dA FA|"Em"BG EG|\
 "D"FA "A7"d3/2e/2|"D"d3:|
-
