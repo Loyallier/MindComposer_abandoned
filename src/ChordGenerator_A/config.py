@@ -1,5 +1,15 @@
 import os
+import sys
 # ✅ 统一引用：从 src 包导入 path
+# 强行把根目录加入 sys.path
+# 1. 获取所在的目录 (src/ChordGenerator_A)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 往上跳两级，找到根目录 (src -> Root)
+project_root = os.path.dirname(os.path.dirname(current_dir))
+# 3. 加入路径
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+    print(f"🔧 已将根目录挂载: {project_root}")
 from src import path
 
 # ---------------------------------------------------------
@@ -15,11 +25,11 @@ MODEL_DIR = path.MODELS_DIR
 # 以后想改模型大小，只改这里，Train 和 Inference 会自动同步
 ENC_EMB_DIM = 64
 DEC_EMB_DIM = 64
-HIDDEN_DIM = 128  # 如果觉得模型太笨，就把这个改成 256
+HIDDEN_DIM = 256  # 如果觉得模型太笨，就把这个改成 256
 DROPOUT = 0.5
 
 # ================= 3. 训练参数(超参数) =================
-BATCH_SIZE = 32
+BATCH_SIZE = 72
 LEARNING_RATE = 0.0002
 N_EPOCHS = 100
 CLIP = 1
@@ -46,3 +56,4 @@ PAD_TOKEN = "<PAD>"
 SOS_TOKEN = "<SOS>"
 EOS_TOKEN = "<EOS>"
 UNK_TOKEN = "0"
+BAR_TOKEN = "<BAR>"
