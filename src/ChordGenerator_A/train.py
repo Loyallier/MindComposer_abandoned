@@ -148,7 +148,7 @@ if __name__ == "__main__":
             status_msg = []
             
             # 💾 存档: 每轮都存 (epoch_001.pth)
-            epoch_save_path = os.path.join(checkpoint_dir, f"epoch_{epoch+1:03d}.pth")
+            epoch_save_path = os.path.join(checkpoint_dir, f"epoch_{epoch+1:03d}_loss_{train_loss:.4f}.pth")
             torch.save(model.state_dict(), epoch_save_path)
 
             if train_loss < best_loss:

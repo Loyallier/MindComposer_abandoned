@@ -37,7 +37,7 @@ def clean_melody_token(token):
     token = str(token).strip()
     
     # 使用 config 里的定义
-    if token in ["_", "0", config.PAD_TOKEN, config.SOS_TOKEN, config.EOS_TOKEN]: 
+    if token in ["_", "0", config.PAD_TOKEN, config.SOS_TOKEN, config.EOS_TOKEN, config.BAR_TOKEN]: 
         return token
     
     if token.isdigit(): 

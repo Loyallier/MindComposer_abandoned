@@ -7,3 +7,5 @@ tempCodeRunnerFile.py
 models/checkpoints
 src/tools
 samples/audit
+__pycache__
+src/preprocessing_A/__pycache__

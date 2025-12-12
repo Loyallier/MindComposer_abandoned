@@ -57,3 +57,8 @@ SOS_TOKEN = "<SOS>"
 EOS_TOKEN = "<EOS>"
 UNK_TOKEN = "0"
 BAR_TOKEN = "<BAR>"
+
+# ================= 5. 推理参数 (新增) =================
+# 控制生成的随机性和多样性
+INFERENCE_TEMP = 1.0    # 温度 (0.8=保守, 1.2=狂野)
+INFERENCE_TOP_K = 3     # 仅在概率最高的 K 个候选中采样
