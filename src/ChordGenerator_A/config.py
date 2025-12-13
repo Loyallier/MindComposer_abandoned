@@ -17,7 +17,8 @@ from src import path
 # ================= 1. 路径映射 =================
 # 直接使用 path 模块定义的路径
 VOCAB_PATH = path.VOCAB_PATH
-DATASET_PATH = path.DATASET_PATH
+TRAIN_DATASET_PATH = path.TRAIN_DATASET_PATH
+VAL_DATASET_PATH = path.VAL_DATASET_PATH
 MODEL_SAVE_PATH = path.BEST_MODEL_PATH
 MODEL_DIR = path.MODELS_DIR
 
@@ -28,16 +29,21 @@ DEC_EMB_DIM = 64
 HIDDEN_DIM = 256  # 如果觉得模型太笨，就把这个改成 256
 DROPOUT = 0.5
 
+# [V3.1] 位置编码参数
+POS_EMB_DIM = 32      # 位置向量维度 (与旋律拼接到一起)
+POS_VOCAB_SIZE = 33   # 词表大小: 0-30(位置) + 31(BAR/SOS/EOS) + 32(PAD)
+POS_PAD_IDX = 32      # Padding 专用的 Index
+
 # ================= 3. 训练参数(超参数) =================
 BATCH_SIZE = 72
-LEARNING_RATE = 0.0002
+LEARNING_RATE = 0.001
 N_EPOCHS = 100
 CLIP = 1
 
 # 【新增控制开关】
 # True = 尝试加载 best_model.pth 继续训练
 # False = 忽略旧模型，强制从头开始
-RESUME_TRAINING = True
+RESUME_TRAINING = False
 
 # 【进阶设置 - 新增】
 SEED = 42  # 随机种子 (保证每次训练结果可复现)
@@ -48,7 +54,7 @@ INIT_WEIGHT_STD = 0.01  # 权重初始化的标准差
 # 防止 AI 偷懒的惩罚权重
 # 如果模型一直输出 "_"，就把这个数调小 (如 0.01)
 # 如果模型太乱动，就把这个数调大 (如 0.1)
-HOLD_LOSS_WEIGHT = 0.06
+HOLD_LOSS_WEIGHT = 0.1
 
 # ================= 4. 特殊 Token 定义 (新增) =================
 # 必须与 vocab.json 和 utils.py 里的定义保持一致
@@ -57,6 +63,8 @@ SOS_TOKEN = "<SOS>"
 EOS_TOKEN = "<EOS>"
 UNK_TOKEN = "0"
 BAR_TOKEN = "<BAR>"
+# ✅ [V3.1 新增] 必须明确定义 PAD_IDX (dataset.py 依赖此变量)
+PAD_IDX = 0
 
 # ================= 5. 推理参数 (新增) =================
 # 控制生成的随机性和多样性

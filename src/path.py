@@ -43,8 +43,10 @@ OUTPUTS_DIR = ROOT_DIR / "generated_outputs"
 # 1. 字典文件 (训练和推理都需要)
 VOCAB_PATH = DATA_PROCESSED_DIR / "vocab.json"
 
-# 2. 编码后的数据集 (训练需要)
-DATASET_PATH = DATA_PROCESSED_DIR / "dataset_encoded.json"
+# 2. [V3.1 更新] 编码后的数据集 (已拆分为训练集和验证集)
+# 替代原本单一的 dataset_encoded.json
+TRAIN_DATASET_PATH = DATA_PROCESSED_DIR / "train_data.json"
+VAL_DATASET_PATH = DATA_PROCESSED_DIR / "val_data.json"
 
 # 3. 最佳模型权重 (推理需要)
 # 指向 models/best_model.pth

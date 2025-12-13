@@ -40,6 +40,10 @@ PENALTY_SCORES = {
     "BadRhythm_Soft": 50,
 }
 
+# [新增配置] 合法小节长度白名单
+# 涵盖: 1拍(4), 2拍(8), 2拍半(10), 3拍(12), 3拍半(14), 4拍(16), 4拍半(18), 5拍(20), 6拍(24), 8拍(32)
+VALID_FULL_BAR_LENGTHS = {4, 8, 10, 12, 14, 16, 18, 20, 24, 32}
+
 DIATONIC_PITCH_CLASSES = {0, 2, 4, 5, 7, 9, 11}
 SAFE_ROOTS = {"C", "D", "E", "F", "G", "A", "B", "Bb", "A#", "Eb", "D#"}
 RESERVED_TOKENS = {
@@ -79,29 +83,40 @@ class SuspicionDetector:
         if len(real_chords) == 0:
             return 9999, ["NoHarmony"]
 
-        # A. 结构一致性 (Expert Fix: Ignore Last Measure)
+        # A. 结构一致性与非法长度检查 (V3.1 Revised)
         bar_indices = [i for i, x in enumerate(melody_seq) if x == config.BAR_TOKEN]
         
-        # 我们至少需要 3 个 BAR 才能确定“中间”的一致性 (Bar1 | Bar2 | Bar3)
         if len(bar_indices) > 2:
             segment_lengths = []
-            for i in range(len(bar_indices) - 1):
-                length = bar_indices[i + 1] - bar_indices[i] - 1
+            start = 0
+            for end in bar_indices:
+                length = end - start
                 segment_lengths.append(length)
+                start = end + 1 
             
-            # 🌟 关键修正：乐曲的最后一小节往往是不完整的（结束音），不应计入节拍稳定性检查
-            # segment_lengths 存储的是 [Measure 2, Measure 3, ... Measure N] 的长度
-            # 我们丢弃最后一个元素
+            # segment_lengths = [Bar1, Bar2, ..., BarN]
+            # 丢弃最后一个小节（通常是不完全小节），检查主体部分
             if len(segment_lengths) > 1:
-                body_lengths = segment_lengths[:-1]
-                unique_lengths = set(body_lengths)
+                # 只检查中间的小节 (Bar 2 到 Bar N-1)
+                # 因为 Bar 1 可能是弱起，Bar N 可能是截断，不参与“非法长度”校验
+                middle_bars = segment_lengths[1:-1]
                 
+                # [原逻辑保留] 拍号稳定性检查
+                unique_lengths = set(middle_bars)
                 if len(unique_lengths) > 2:
-                    score += PENALTY_SCORES["BadRhythm_Hard"]
+                    score += PENALTY_SCORES["BadRhythm_Hard"] # +100
                     reasons.append(f"InconsistentBar(Hard)")
                 elif len(unique_lengths) == 2:
-                    score += PENALTY_SCORES["BadRhythm_Soft"]
+                    score += PENALTY_SCORES["BadRhythm_Soft"] # +50 (允许一次变奏)
                     reasons.append(f"InconsistentBar(Soft)")
+
+                # [新逻辑] 非法长度精准打击
+                # 只要中间出现任何一个奇怪长度 (如 7, 9, 13, 22)，直接处决
+                for l in middle_bars:
+                    if l not in VALID_FULL_BAR_LENGTHS:
+                        score += 100
+                        reasons.append(f"WeirdLength({l})")
+                        break # 发现一个脏小节就足够了
 
         # B. 旋律检查
         total_notes = 0
