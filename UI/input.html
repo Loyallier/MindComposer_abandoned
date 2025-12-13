@@ -9,6 +9,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet" />
     <style>
+
+.input.upload {
+  position: relative;
+  overflow: hidden;
+}
+
+
+.fileInputReal {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
       :root {
         --bg-start: #0d1b3d;
         --bg-end: #08122b;
@@ -68,6 +82,12 @@
         transition: background 0.6s ease, box-shadow 0.6s ease, filter 0.6s ease;
         filter: brightness(0.90) contrast(0.96);
       }
+      .infoOverlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: radial-gradient(800px 600px at 50% 50%, rgba(20,30,60,0.70) 0%, rgba(10,20,40,0.65) 40%, rgba(6,12,28,0.60) 100%); backdrop-filter: blur(4px); z-index: 10; cursor: none; }
+      .infoBox { position: relative; width: clamp(420px, 50vw, 740px); min-height: clamp(360px, 58vh, 720px); margin-top: 18vh; border-radius: 16px; padding: 22px 24px; background: linear-gradient(180deg, #0f1b34, #0a1428); color: #cfe6ff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 42px rgba(76,195,255,0.16); text-align: left; }
+      .infoTitle { margin: 0 0 12px 0; font-weight: 800; letter-spacing: 0.10em; font-size: clamp(16px, 2.2vw, 22px); color: #9cc4ff; text-transform: uppercase; }
+      .infoText { margin: 0; font-size: clamp(14px, 2vw, 18px); letter-spacing: 0.06em; color: #d5e9ff; text-shadow: 0 0 8px rgba(76,195,255,0.35), 0 0 16px rgba(116,92,255,0.25); }
+      .infoClose { position: absolute; top: 10px; right: 12px; width: 28px; height: 28px; border: none; outline: none; cursor: none; border-radius: 14px; background: linear-gradient(180deg, #142440, #0f1d36); color: #d5e9ff; font-weight: 800; box-shadow: inset 0 1px 0 rgba(255,255,255,0.10); }
+      .infoTrigger { position: absolute; right: 12px; bottom: 12px; width: 28px; height: 28px; border-radius: 50%; border: none; outline: none; cursor: none; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.18)); color: #d5e9ff; font-weight: 800; font-style: italic; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
       .panel.melody { --blue: #5aa4ff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); filter: brightness(0.90) contrast(0.96); }
       .panel.melody .label { color: #9fc7ff; }
       .panel.melody .optionIcon { background: #5aa4ff; }
@@ -151,7 +171,7 @@
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(76, 195, 255, 0.16);
         transition: background-color 0.6s ease, box-shadow 0.6s ease, filter 0.6s ease;
       }
-      .btn:disabled { opacity: 0.7; cursor: default; }
+      .btn:disabled { opacity: 0.7; cursor: none; }
       .status { margin-top: 14px; font-size: 14px; letter-spacing: 0.06em; color: #9cc4ff; opacity: 0.92; }
       .player { width: 100%; margin-top: 8px; display: none; cursor: none; }
       .modeToggle { display: flex; align-items: center; gap: 14px; padding: 0 12px; }
@@ -207,7 +227,7 @@
         width: 28px;
         height: 28px;
         pointer-events: none;
-        z-index: 2;
+        z-index: 100;
         transform: translate3d(0, 0, 0) rotate(-12deg);
         will-change: transform;
         filter: drop-shadow(0 0 12px rgba(76,195,255,0.85)) drop-shadow(0 0 24px rgba(76,195,255,0.55)) drop-shadow(0 0 48px rgba(76,195,255,0.35));
@@ -229,14 +249,15 @@
       </section>
       <section class="panel">
         <form id="melody">
-          <div class="field">
-            <div class="label">Upload File:</div>
-            <input id="file" type="file" accept=".mid,.midi,.wav,.mp3" style="display:none" />
-            <div class="input upload">
-              <button id="pick" class="pickBtn" type="button">CHOOSE FILE</button>
-              <span id="fileName" class="fileName">No file selected</span>
-            </div>
-          </div>
+<div class="input upload">
+
+  <input id="file" name="file" type="file" accept=".mid,.midi" class="fileInputReal" />
+
+
+  <button id="pick" class="pickBtn" type="button">CHOOSE FILE</button>
+  <span id="fileName" class="fileName">No file selected</span>
+</div>
+
           <div class="field">
             <div class="label">Tempo:</div>
             <div class="selectWrap">
@@ -268,6 +289,7 @@
         </form>
         <div id="status" class="status"></div>
         <audio id="player" class="player" controls></audio>
+        <button id="infoTrigger" class="infoTrigger" type="button" aria-label="Show instructions">i</button>
       </section>
 
       <canvas class="particles" aria-hidden="true"></canvas>
@@ -276,6 +298,13 @@
         <g id="waveGroup" fill="none" stroke-width="1.6" opacity="0.75" stroke-linecap="round"></g>
       </svg>
     </main>
+    <div id="infoOverlay" class="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" aria-describedby="infoText">
+      <div class="infoBox">
+        <h2 id="infoTitle" class="infoTitle">Instructions</h2>
+        <p id="infoText" class="infoText">information</p>
+        <button id="infoClose" class="infoClose" type="button" aria-label="Close">×</button>
+      </div>
+    </div>
 
     <script>
       const stageEl = document.querySelector('.stage');
@@ -358,6 +387,15 @@
       resizeParticles();
       stepParticles();
       window.addEventListener('resize', resizeParticles, { passive: true });
+      const infoOverlay = document.getElementById('infoOverlay');
+      const infoTrigger = document.getElementById('infoTrigger');
+      const infoClose = document.getElementById('infoClose');
+      function showInfo() { infoOverlay.style.display = 'flex'; }
+      function hideInfo() { infoOverlay.style.display = 'none'; }
+      infoTrigger.addEventListener('click', showInfo);
+      infoClose.addEventListener('click', () => { hideInfo(); sessionStorage.setItem('showInfoOnInput', '0'); });
+      const autoShow = sessionStorage.getItem('showInfoOnInput');
+      if (autoShow === null || autoShow === '1') { showInfo(); }
       const form = document.getElementById('melody');
       const gen = document.getElementById('gen');
       const fileInput = document.getElementById('file');
@@ -421,20 +459,74 @@
       }
       setMode(modeInput.value, true);
       modeBtn.addEventListener('click', () => { setMode(modeInput.value === 'chord' ? 'melody' : 'chord', false); });
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const file = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
-        if (!file) {
-          statusEl.textContent = 'Please choose a file.';
-          return;
-        }
-        const mode = modeInput.value;
-        sessionStorage.setItem('mode', mode);
-        sessionStorage.setItem('pendingName', file.name);
-        sessionStorage.setItem('tempo', tempoSel.value);
-        sessionStorage.setItem('style', styleSel.value);
-        window.location.href = `thinking.html?mode=${mode}`;
-      });
+    form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const file = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+  if (!file) {
+    statusEl.textContent = 'Please choose a MIDI file.';
+    return;
+  }
+
+  const lowerName = file.name.toLowerCase();
+  if (!lowerName.endsWith('.mid') && !lowerName.endsWith('.midi')) {
+
+    statusEl.textContent = 'Only MIDI files (.mid, .midi) are supported.';
+    return;
+  }
+
+  const mode = modeInput.value;
+  const tempo = tempoSel.value;
+  const style = styleSel.value;
+
+
+  sessionStorage.setItem('mode', mode);
+  sessionStorage.setItem('pendingName', file.name);
+  sessionStorage.setItem('tempo', tempo);
+  sessionStorage.setItem('style', style);
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('style', style);
+  formData.append('mode', mode);
+
+  gen.disabled = true;
+  statusEl.textContent = 'Uploading and generating...';
+
+  try {
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || !data.success) {
+      const msg = data && data.message ? data.message : 'Generation failed.';
+      throw new Error(msg);
+    }
+
+
+    sessionStorage.setItem('resultReady', '1');
+    sessionStorage.setItem('resultAudioUrl', data.file_url);
+    sessionStorage.setItem('midiUrl', data.file_url);
+    sessionStorage.setItem('resultScoreUrl', data.file_url);
+    sessionStorage.setItem('chord_preview', JSON.stringify(data.chord_preview || []));
+    sessionStorage.setItem('detected_style', data.detected_style || '');
+    sessionStorage.setItem('final_style', data.final_style || '');
+
+    statusEl.textContent = 'Generation successful! Redirecting...';
+
+    const target = mode === 'melody' ? 'thinking_melody.html' : 'thinking.html';
+    window.location.href = `${target}?mode=${mode}`;
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = err.message || 'Generation failed. Please try again.';
+  } finally {
+    gen.disabled = false;
+  }
+});
+
 
       const svg = document.querySelector('svg.waves');
       const group = svg.querySelector('#waveGroup');
