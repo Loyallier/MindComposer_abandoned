@@ -8,9 +8,67 @@ from TextureRender_B.data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_s
 logger = logging.getLogger("B_Decision")
 
 # Group B Phase 3: Decision and Rendering
-# 核心功能：根据旋律密度和风格选择织体，并生成 music21 Part。
 
+# ----------------------------------------------------
+# 新增：MIDI 力度值映射和计算逻辑 (Velocity Mapping and Calculation)
+# ----------------------------------------------------
+
+# MIDI 力度值映射参数 (Velocity Mapping Parameters)
+# MIDI 力度范围是 0-127
+MAX_VELOCITY = 100 # 伴奏音符最大力度
+MIN_VELOCITY = 40  # 伴奏音符最小力度
+
+# 强弱拍相对力度权重 (用于 4/4 和 3/4 拍，基于 QuarterLength 偏移)
+# Key: 模板的总时长 (QL)
+# Value: { 拍子的起始 QL 偏移: 相对力度乘数 }
+BEAT_VELOCITY_WEIGHTS = {
+    4.0: {0.0: 1.0, 1.0: 0.8, 2.0: 0.9, 3.0: 0.7}, # 4/4 拍 (1拍最强，3拍次强)
+    3.0: {0.0: 1.0, 1.0: 0.7, 2.0: 0.8},          # 3/4 拍 (1拍最强)
+}
+
+def calculate_velocity(segment_offset: float, density: float, template_duration: float) -> int:
+    """
+    根据音符在片段中的起始位置、旋律密度和模板时长计算 MIDI 力度值。
+    
+    Args:
+        segment_offset (float): 音符在和弦片段内模板周期中的起始时间 (QL)。
+        density (float): 当前片段的旋律密度 (0.0 - 1.0)。
+        template_duration (float): 模板的总时长 (如 4.0 QL 或 3.0 QL)。
+        
+    Returns:
+        int: 计算出的 MIDI 力度值 (0-127)。
+    """
+    
+    # 1. 密度反向调节 (Density Inverse Adjustment)
+    # 旋律密度越高，伴奏力度越小 (1.0 - density)
+    density_factor = 1.0 - density
+    
+    # 2. 强弱拍权重 (Metric Weight)
+    # 计算音符在模板周期中的相对位置
+    beat_time = segment_offset % template_duration
+    
+    # 获取对应模板时长的权重，默认 4/4
+    weights = BEAT_VELOCITY_WEIGHTS.get(template_duration, BEAT_VELOCITY_WEIGHTS[4.0])
+    
+    metric_weight = 1.0 
+    # 查找最接近的拍子起始点来应用强弱拍权重
+    for beat_start, weight in weights.items():
+        if abs(beat_time - beat_start) < 0.1: # 允许微小误差
+            metric_weight = weight
+            break
+            
+    # 3. 综合计算最终力度
+    base_velocity = MAX_VELOCITY - MIN_VELOCITY
+    
+    # 最终力度 = 最小力度 + (力度基准范围 * 密度反调因子 * 强弱拍权重)
+    final_velocity = MIN_VELOCITY + (base_velocity * density_factor * metric_weight)
+    
+    # 确保力度在有效范围内
+    return int(max(MIN_VELOCITY, min(MAX_VELOCITY, final_velocity)))
+
+# ----------------------------------------------------
 # 1. 启发式决策：织体选择 (Texture Selector)
+# ----------------------------------------------------
 DENSITY_THRESHOLD = 0.4 # 旋律密度阈值：超过此值视为“繁忙”
 
 def select_texture_pattern(style: str, density_score: float) -> str:
@@ -95,8 +153,7 @@ def _calculate_melody_density(melody_stream: m21.stream.Stream, consolidated_cho
 
         # 密度计算
         if duration > 0:
-            # 使用一个缩放因子 (0.5) 和平方根来将密度值映射到 0-1 范围，并平滑变化
-            # 基准速率设置为 1.0 QL 2 个音符时密度为 1.0 (sqrt(2) * 0.7 = ~1.0)
+            # 使用一个缩放因子 (0.7) 和平方根来将密度值映射到 0-1 范围，并平滑变化
             density = math.sqrt(segment_notes_count / duration) * 0.7 
         else:
             density = 0.0
@@ -128,9 +185,9 @@ def generate_accompaniment_part(
 
     for i in range(num_chords):
         chord_label, segment_length = consolidated_chords[i]
-        density = melody_densities[i]
+        density = melody_densities[i] # 获取当前片段的密度
         
-        # 1. 解析和弦标签 (例如: 'G7' -> 'G', 'Dom7')
+        # 1. 解析和弦标签
         root_name, chord_type = parse_simplified_chord(chord_label)
         
         if chord_type not in CHORD_TYPES:
@@ -138,7 +195,7 @@ def generate_accompaniment_part(
             current_offset += segment_length
             continue
             
-        # 【新增】处理 NoChord/休止符号 '0'
+        # 处理 NoChord/休止符号 '0'
         if chord_type == 'NoChord':
             logger.debug(f"和弦 {chord_label} 为 NoChord/休止，跳过该片段，不生成伴奏。")
             current_offset += segment_length
@@ -150,23 +207,20 @@ def generate_accompaniment_part(
 
         # 2. 决策：选择织体模板
         pattern_name = select_texture_pattern(selected_style, density)
-        # ... (rest of the template selection logic remains unchanged) ...
         template = PATTERN_TEMPLATES.get(pattern_name)
         
         if not template:
             logger.warning(f"风格 {pattern_name} 无模板，回退到 Pop Ballad。")
             template = PATTERN_TEMPLATES["Pop Ballad"]
-            pattern_name = "Pop Ballad" # 确保日志记录正确
+            pattern_name = "Pop Ballad" 
             
         logger.debug(f"和弦 {chord_label}, 时长 {segment_length:.2f} QL, 织体 {pattern_name}")
 
         # 3. 实例化音符并插入 Part (关键步骤：循环填充整个和弦时长)
-        # ... (rest of the note insertion logic remains unchanged) ...
         time_elapsed_in_segment = 0.0
         
         # 确定模板的时长，以便重复填充
         template_duration = 4.0 
-        
         if pattern_name == "Waltz":
             template_duration = 3.0
         
@@ -180,7 +234,7 @@ def generate_accompaniment_part(
                 
                 # 检查此音符是否会超出和弦片段的剩余时间
                 note_start_time = time_elapsed_in_segment + time_offset
-                original_duration = duration # 备份原始时长
+                original_duration = duration 
                 
                 if note_start_time >= segment_length:
                     # 如果音符起始时间已经超过片段长度，跳出模板循环
@@ -204,6 +258,15 @@ def generate_accompaniment_part(
                 note = m21.note.Note()
                 note.midi = note_midi
                 note.duration.quarterLength = duration
+                
+                # ***** 新增：计算并设置 MIDI 力度 (Velocity) *****
+                note_velocity = calculate_velocity(
+                    segment_offset=note_start_time, 
+                    density=density, 
+                    template_duration=template_duration
+                )
+                note.volume.velocity = note_velocity
+                # ************************************************
                 
                 # 插入到 Part 中
                 accompaniment_part.insert(current_offset + note_start_time, note)
