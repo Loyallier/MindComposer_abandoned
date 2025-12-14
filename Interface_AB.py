@@ -137,8 +137,8 @@ class AI_Music_Generator:
 
 if __name__ == "__main__":
     # 配置
-    input_file = r"samples\audit_detailed\case_3_1_Melody.mid"     
-    output_file = r"samples\final_output_sample.mid"
+    input_file = r"samples\test_result.mid"     
+    output_file = r"samples\output_test_melody.mid"
     target_style = "Pop Ballad"            
 
     # 运行
