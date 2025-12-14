@@ -184,3 +184,18 @@ def token_to_tensor_v3_with_pos(token_list, pos_list, vocab_stoi, device):
     length = torch.LongTensor([len(ids)])
     
     return src_tensor, pos_tensor, length
+
+def get_current_tf_ratio(epoch):
+    """
+    [V3.4 Engineering] 计算当前 Epoch 的 Teacher Forcing Ratio
+    策略: 线性衰减 (Linear Decay)
+    """
+    # 如果还没到衰减结束轮次
+    if epoch < config.TF_DECAY_EPOCHS:
+        # 计算衰减步长
+        decay_step = (config.TF_START_RATIO - config.TF_END_RATIO) / config.TF_DECAY_EPOCHS
+        current_ratio = config.TF_START_RATIO - (epoch * decay_step)
+        return max(config.TF_END_RATIO, current_ratio)
+    else:
+        # 超过衰减轮次，保持最低值
+        return config.TF_END_RATIO

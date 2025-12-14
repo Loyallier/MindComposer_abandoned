@@ -11,3 +11,4 @@ __pycache__
 src/preprocessing_A/__pycache__
 create_test_midi_A.py
 samples/audit_detailed
+data/nottingham-dataset-master

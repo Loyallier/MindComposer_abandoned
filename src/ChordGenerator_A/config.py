@@ -36,7 +36,7 @@ POS_PAD_IDX = 32      # Padding 专用的 Index
 
 # ================= 3. 训练参数(超参数) =================
 BATCH_SIZE = 72
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0005
 N_EPOCHS = 100
 CLIP = 1
 
@@ -44,17 +44,27 @@ CLIP = 1
 # True = 尝试加载 best_model.pth 继续训练
 # False = 忽略旧模型，强制从头开始
 RESUME_TRAINING = False
+START_EPOCH = 0  # 您上次大概训练到的轮数
 
 # 【进阶设置 - 新增】
 SEED = 42  # 随机种子 (保证每次训练结果可复现)
 TEACHER_FORCING_RATIO = 0.5  # 教学强制率 (0.5 = 50%概率用真实答案纠正模型)
 INIT_WEIGHT_STD = 0.01  # 权重初始化的标准差
 
-# 【核心策略 - 新增】
-# 防止 AI 偷懒的惩罚权重
-# 如果模型一直输出 "_"，就把这个数调小 (如 0.01)
-# 如果模型太乱动，就把这个数调大 (如 0.1)
+# TF 策略参数 (V3.5 放缓衰减)
+TF_START_RATIO = 1.0
+TF_END_RATIO = 0.0
+# 📈 [V3.5] 让老师多带一会儿，80轮才彻底放手
+TF_DECAY_EPOCHS = 80
+
+# [V3.3] 保持 Hold 权重，因为节奏已经学会了，不需要再动这个
 HOLD_LOSS_WEIGHT = 0.1
+
+# [V3.3 新增] 权重衰减 (L2 Regularization)
+WEIGHT_DECAY = 1e-4
+
+# [V3.3 新增] 标签平滑
+LABEL_SMOOTHING = 0.1
 
 # ================= 4. 特殊 Token 定义 (新增) =================
 # 必须与 vocab.json 和 utils.py 里的定义保持一致
