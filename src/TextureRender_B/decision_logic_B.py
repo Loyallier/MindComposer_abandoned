@@ -15,8 +15,8 @@ logger = logging.getLogger("B_Decision")
 
 # MIDI 力度值映射参数 (Velocity Mapping Parameters)
 # MIDI 力度范围是 0-127
-MAX_VELOCITY = 100 # 伴奏音符最大力度
-MIN_VELOCITY = 40  # 伴奏音符最小力度
+MAX_VELOCITY = 127 # 伴奏音符最大力度
+MIN_VELOCITY = 80  # 伴奏音符最小力度
 
 # 强弱拍相对力度权重 (用于 4/4 和 3/4 拍，基于 QuarterLength 偏移)
 # Key: 模板的总时长 (QL)
