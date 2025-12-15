@@ -1,227 +1,127 @@
 import os
-import time
-import logging
-import shutil
-from typing import List, Dict, Any, Union
+import sys
+import music21
 
-# 【新增】导入 music21 和 B 组生成逻辑
-import music21 as m21
-from TextureRender_B.decision_logic_B import (
-    render_accompaniment_from_raw_inputs,
-)  # 导入 B 组主入口函数
+# ================= 1. 环境挂载 =================
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
-# ==========================================
-# 0. 全局配置 (Global Configuration)
-# ==========================================
-# 【关键开关】
-# True = 演示模式 (返回假数据，用于UI开发和流程跑通)
-# False = 实战模式 (调用真实模型和生成算法，Day 8 联调时切换)
-USE_MOCK_MODELS = True
+# 导入 A 组预测器
+try:
+    from src.ChordGenerator_A.predict_midi import ChordPredictor
+    print("✅ Group A (ChordPredictor) 导入成功")
+except ImportError as e:
+    print(f"❌ Group A 导入失败: {e}")
+    sys.exit(1)
 
-# 路径配置
-OUTPUT_DIR = "generated_outputs"
-LOG_DIR = "logs"
+# 导入 B 组接口
+try:
+    from interface_B import render_accompaniment
+    print("✅ Group B (Interface) 导入成功")
+except ImportError as e:
+    print(f"❌ Group B 导入失败: {e}")
+    render_accompaniment = None
 
-# 确保目录存在
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(LOG_DIR, exist_ok=True)
+# ================= 2. 配置 =================
+TEST_MIDI_PATH = os.path.join("samples", "test_melody.mid")
+OUTPUT_MIDI_PATH = os.path.join("samples", "final_integrated_output.mid")
+TARGET_STYLE = "Pop Ballad" 
 
-# 日志配置
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - [%(name)s] - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(os.path.join(LOG_DIR, "system.log")),
-        logging.StreamHandler(),
-    ],
-)
+def main():
+    print("\n🔗 启动全链路集成测试 (Pipeline Verification - Fixed)...")
+    
+    if not os.path.exists(TEST_MIDI_PATH):
+        print(f"❌ 找不到测试文件: {TEST_MIDI_PATH}")
+        return
 
-# 允许的风格列表 (B组需实现这些风格的模板)
-VALID_STYLES = ["Pop Ballad", "Waltz", "March", "Jazz Swing"]
-
-# ==========================================
-# Group A Section
-# ==========================================
-
-# 1. 定义一个私有变量，用来存模型实例，防止每次点击都重新加载
-# (把它放在函数外面，这样全组都能看到 A 组有个全局模型变量，但不影响别人)
-_group_a_model = None
-
-
-def predict_harmony(melody_list):
-    """
-    【A组任务】根据旋律预测和弦
-    """
-    global _group_a_model  # 声明我们要使用上面那个全局变量
-
-    # Step 1: 懒加载 (Lazy Import & Init)
-    # 只有第一次运行这个函数时，才会去 import 和加载模型
-    # 这样不会污染文件顶部的 import 区域，也不会拖慢程序启动速度
-    if _group_a_model is None:
-        try:
-            print("⏳ [Group A] 正在唤醒 AI 模型...")
-            # 动态导入，避免在文件头引入 src 包依赖
-            from src.ChordGenerator_A.inference import AIComposer
-
-            _group_a_model = AIComposer()
-            print("✅ [Group A] 模型就绪。")
-        except Exception as e:
-            print(f"❌ [Group A] 模型加载失败: {e}")
-            return []  # 出错返回空列表，保证系统不崩
-
-    # Step 2: 执行预测
+    # --- Step 1: Group A (和弦预测) ---
+    print("\n[Step 1] 正在运行 Group A 模型预测和弦...")
     try:
-        if not melody_list:
-            return []
-
-        # 调用 A 组核心逻辑
-        return _group_a_model.predict(melody_list)
-
+        predictor = ChordPredictor()
+        chord_tokens = predictor.run(TEST_MIDI_PATH)
+        
+        if not chord_tokens:
+            print("❌ Group A 返回了空列表！")
+            return
+            
+        print(f"   ✅ A组预测成功。长度: {len(chord_tokens)} tokens")
+        print(f"   -> 预览: {chord_tokens[:10]}...")
+        
     except Exception as e:
-        print(f"❌ [Group A] 预测出错: {e}")
-        return []
+        print(f"❌ Group A 运行出错: {e}")
+        return
 
-
-# ==========================================
-# 2. Group B: 逻辑生成模块 (The Hands)
-# ==========================================
-def render_music(melody_midi_path: str, chord_sequence: List[str], style: str) -> str:
-    """
-    [B组 核心任务]
-    输入: 原始旋律 + A组预测的和弦序列 + 用户选择的风格
-    输出: 最终生成的 MIDI 文件路径
-    """
-    logger = logging.getLogger("Group_B_Logic")
-    logger.info(f"开始生成伴奏... 风格: {style}")
-
-    # 构造输出文件名
-    filename = f"result_{int(time.time())}_{style.replace(' ', '_')}.mid"
-    output_path = os.path.join(OUTPUT_DIR, filename)
-
-    if USE_MOCK_MODELS:
-        # --- Mock 模式 (模拟生成) ---
-        time.sleep(1)
-
-        # 直接把用户上传的文件复制过去，假装是生成结果
-        # 这样 UI 播放时至少能听到声音 (虽然只有旋律)
-        try:
-            shutil.copy(melody_midi_path, output_path)
-            logger.info(f"模拟生成完毕: {output_path}")
-        except Exception as e:
-            # 如果复制失败，创建一个空的 dummy 文件
-            with open(output_path, "wb") as f:
-                f.write(b"MThd...")
-            logger.warning(f"无法复制源文件，创建空文件: {e}")
-
-        return output_path
-
-    else:
-        # --- Real 模式 (真实渲染) ---
-
-        try:
-            # 1. 调用 B 组的主入口函数，生成伴奏 Part
-            accompaniment_part = render_accompaniment_from_raw_inputs(
-                melody_midi_path, chord_sequence, style
-            )
-
-            # 2. 读取原始旋律 Score
-            original_score = m21.converter.parse(melody_midi_path)
-
-            # 3. 创建最终 Score 并合并旋律和伴奏
-            final_score = m21.stream.Score()
-
-            # 找到原始旋律 part (通常是第一个)
-            if original_score.parts:
-                final_score.insert(0, original_score.parts[0])
-            else:
-                logger.warning("无法从 MIDI 文件中提取旋律 Part。仅包含伴奏。")
-
-            # 插入伴奏 Part (确保插入到正确的位置，通常是 0.0 offset)
-            final_score.insert(0, accompaniment_part)
-
-            # 4. 保存为 MIDI 文件
-            final_score.write("midi", fp=output_path)
-
-            logger.info(f"真实生成完毕: {output_path}")
-            return output_path
-
-        except Exception as e:
-            logger.error(f"B组生成逻辑出错: {e}", exc_info=True)
-            # 为了不阻断流程，可以在失败时创建一个空的 Part 并保存
-            m21.stream.Part().write("midi", fp=output_path)
-            raise RuntimeError(f"音乐生成失败: {e}")
-
-
-# ==========================================
-# 3. Group C: 主控接口 (Main Pipeline)
-# ==========================================
-def generate_song(
-    uploaded_file_path: str, selected_style: str = "Pop Ballad"
-) -> Dict[str, Any]:
-    """
-    [UI 组唯一调用的接口]
-    """
-    logger = logging.getLogger("Pipeline")
-
-    # 结果容器
-    result = {
-        "success": False,
-        "message": "",
-        "midi_path": None,
-        "chord_preview": [],  # 用于在前端展示和弦走向
-    }
+    # --- Step 2: Group B (织体渲染) ---
+    print(f"\n[Step 2] 正在调用 Group B 接口渲染伴奏...")
+    
+    if render_accompaniment is None:
+        print("❌ B组接口不可用，跳过。")
+        return
 
     try:
-        # 1. 校验
-        if not os.path.exists(uploaded_file_path):
-            raise FileNotFoundError("未找到上传文件")
+        # B组返回的是一个 music21.stream.Part 对象
+        accompaniment_part = render_accompaniment(
+            melody_midi_path=TEST_MIDI_PATH,
+            chord_sequence=chord_tokens,
+            style=TARGET_STYLE
+        )
+        
+        if accompaniment_part is None or len(accompaniment_part.flatten().notes) == 0:
+            print("⚠️ Group B 返回了空轨道。")
+        else:
+            print(f"   ✅ B组渲染成功 (Music21 Part)。")
+            
+    except Exception as e:
+        print(f"❌ Group B 运行出错: {e}")
+        return
 
-        if selected_style not in VALID_STYLES:
-            logger.warning(f"未知风格 {selected_style}，使用默认风格")
-            selected_style = VALID_STYLES[0]
+    # --- Step 3: 合成与导出 (修复版) ---
+    print("\n[Step 3] 标准化合成最终 MIDI...")
+    try:
+        # 1. 读取原旋律
+        original_score = music21.converter.parse(TEST_MIDI_PATH)
+        if original_score.hasPartLikeStreams():
+            melody_part = original_score.parts[0]
+        else:
+            melody_part = original_score
+            
+        melody_part.id = "Melody"
+        melody_part.partName = "Original Melody"
 
-        # 2. 执行 A 组任务 (预测)
-        logger.info(">>> Stage 1: AI Prediction <<<")
-        chords = predict_harmony(uploaded_file_path)
+        # 2. 伴奏轨道标准化 (关键修复！！！)
+        accompaniment_part.id = "Accompaniment"
+        accompaniment_part.partName = f"AI Gen ({TARGET_STYLE})"
+        
+        print("   -> 正在构建小节结构 (makeMeasures)...")
+        # 🚨 B组返回的通常是 Flat Stream (无小节线)，直接写 MIDI 会报错
+        # 必须先划分小节
+        try:
+            accompaniment_part.makeMeasures(inPlace=True)
+        except Exception as e:
+            print(f"   ⚠️ 伴奏小节划分警告: {e}")
 
-        # 为了前端展示好看，我们把 '_' 过滤掉，只返回纯和弦列表给 UI 显示
-        # 例如: ['C', 'G7', 'Am']
-        display_chords = [c for c in chords if c != "_"]
-        result["chord_preview"] = display_chords[:10]  # 只展示前10个，避免刷屏
+        # 3. 组装 Score
+        final_score = music21.stream.Score()
+        
+        # 插入元数据
+        md = music21.metadata.Metadata()
+        md.title = "AI Pipeline Output"
+        final_score.insert(0, md)
+        
+        # 插入轨道
+        final_score.insert(0, melody_part)
+        final_score.insert(0, accompaniment_part)
 
-        # 3. 执行 B 组任务 (生成)
-        logger.info(">>> Stage 2: Rule-based Generation <<<")
-        final_midi = render_music(uploaded_file_path, chords, selected_style)
-
-        # 4. 完成
-        result["success"] = True
-        result["midi_path"] = final_midi
-        result["message"] = "生成成功！请点击播放或下载。"
-        logger.info(f"流程结束。输出: {final_midi}")
+        # 4. 保存
+        os.makedirs(os.path.dirname(OUTPUT_MIDI_PATH), exist_ok=True)
+        final_score.write('midi', fp=OUTPUT_MIDI_PATH)
+        print(f"🎉 流程跑通！文件已保存至: {OUTPUT_MIDI_PATH}")
 
     except Exception as e:
-        logger.error(f"流程异常: {str(e)}", exc_info=True)
-        result["message"] = f"生成失败: {str(e)}"
+        print(f"❌ 合成失败: {e}")
+        import traceback
+        traceback.print_exc()
 
-    return result
-
-
-# ==========================================
-# 4. 测试入口 (Debug)
-# ==========================================
 if __name__ == "__main__":
-    print("--- 正在测试接口连通性 ---")
-    # 创建一个假的 MIDI 文件用于测试
-    dummy_input = "test_input.mid"
-    with open(dummy_input, "w") as f:
-        f.write("dummy")
-
-    # 模拟调用
-    res = generate_song(dummy_input, "Waltz")
-
-    print("\n返回结果:")
-    print(res)
-
-    # 清理垃圾
-    if os.path.exists(dummy_input):
-        os.remove(dummy_input)
+    main()
