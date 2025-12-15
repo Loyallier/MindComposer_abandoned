@@ -43,8 +43,8 @@ CLIP = 1
 # 【新增控制开关】
 # True = 尝试加载 best_model.pth 继续训练
 # False = 忽略旧模型，强制从头开始
-RESUME_TRAINING = False
-START_EPOCH = 0  # 您上次大概训练到的轮数
+RESUME_TRAINING = True
+START_EPOCH = 3  # 您上次大概训练到的轮数
 
 # 【进阶设置 - 新增】
 SEED = 42  # 随机种子 (保证每次训练结果可复现)
@@ -58,13 +58,13 @@ TF_END_RATIO = 0.0
 TF_DECAY_EPOCHS = 80
 
 # [V3.3] 保持 Hold 权重，因为节奏已经学会了，不需要再动这个
-HOLD_LOSS_WEIGHT = 0.1
+HOLD_LOSS_WEIGHT = 0.12
 
 # [V3.3 新增] 权重衰减 (L2 Regularization)
 WEIGHT_DECAY = 1e-4
 
 # [V3.3 新增] 标签平滑
-LABEL_SMOOTHING = 0.1
+LABEL_SMOOTHING = 0.01
 
 # ================= 4. 特殊 Token 定义 (新增) =================
 # 必须与 vocab.json 和 utils.py 里的定义保持一致
@@ -75,6 +75,7 @@ UNK_TOKEN = "0"
 BAR_TOKEN = "<BAR>"
 # ✅ [V3.1 新增] 必须明确定义 PAD_IDX (dataset.py 依赖此变量)
 PAD_IDX = 0
+ZERO_IDX = 5  # "0" 的索引
 
 # ================= 5. 推理参数 (新增) =================
 # 控制生成的随机性和多样性
