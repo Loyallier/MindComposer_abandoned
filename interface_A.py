@@ -110,7 +110,7 @@ class GeneratorA:
 # ================= 3. 测试入口 =================
 if __name__ == "__main__":
     # 简单测试
-    in_file = os.path.join("src", "test_melody.mid")
+    in_file = os.path.join("test_melody.mid")
     out_file = "output_model_A_standalone.mid"
     
     if os.path.exists(in_file):

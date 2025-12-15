@@ -23,6 +23,28 @@ from src.ChordGenerator_A.dataset import MusicDataset, collate_fn
 
 # ================= 工具函数 =================
 
+# ✅ [V3.6 新增] 准确率计算函数
+def calculate_accuracy(output, trg):
+    """
+    计算准确率 (忽略 Padding 和 BAR)
+    output: [batch_size * seq_len, output_dim]
+    trg:    [batch_size * seq_len]
+    """
+    # 获取预测的最大概率索引
+    preds = output.argmax(dim=1, keepdim=True) 
+    
+    # trg 必须和 preds 形状一致
+    correct = preds.eq(trg.view_as(preds))
+    
+    # 忽略 PAD (0) 和 BAR (假设BAR不计入准确率，或者计入均可)
+    # 我们这里只忽略 PAD
+    non_pad_mask = trg.ne(config.PAD_IDX)
+    
+    # 最终计算
+    correct_non_pad = correct.squeeze(1) & non_pad_mask
+    acc = correct_non_pad.sum().float() / non_pad_mask.sum().float()
+    
+    return acc
 
 # ✅ [V3.4] 调度函数放回此处，确保独立运行
 def get_current_tf_ratio(epoch):
@@ -62,6 +84,7 @@ def train(model, iterator, optimizer, criterion, clip, device, tf_ratio):
     """
     model.train()
     epoch_loss = 0
+    epoch_acc = 0 # ✅ V3.6 新增
 
     # Unpack 4 items: src, pos, trg, lengths
     for i, (src, pos, trg, lengths) in enumerate(iterator):
@@ -81,27 +104,30 @@ def train(model, iterator, optimizer, criterion, clip, device, tf_ratio):
 
         loss = criterion(output, trg)
         loss.backward()
+        # ✅ [V3.6] 计算准确率
+        acc = calculate_accuracy(output, trg)
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
         epoch_loss += loss.item()
+        epoch_acc += acc.item() # [V3.6] ✅ 累加
 
-    return epoch_loss / len(iterator)
+    return epoch_loss / len(iterator), epoch_acc / len(iterator)  # [V3.6] ✅ 返回平均准确率
 
 
 def evaluate(model, iterator, criterion, device):
     """
-    V3.1 验证循环
+    V3.6 验证循环 (修复返回值)
     """
     model.eval()
     epoch_loss = 0
+    epoch_acc = 0 # ✅ V3.6 新增
 
     with torch.no_grad():
         for i, (src, pos, trg, lengths) in enumerate(iterator):
             src = src.to(device)
-            pos = pos.to(device)  # ✅ [V3.1]
+            pos = pos.to(device)
             trg = trg.to(device)
 
-            # ✅ [V3.1] 传入 pos
             output = model(src, pos, trg, lengths, teacher_forcing_ratio=0)
 
             output_dim = output.shape[-1]
@@ -109,9 +135,13 @@ def evaluate(model, iterator, criterion, device):
             trg = trg[:, 1:].reshape(-1)
 
             loss = criterion(output, trg)
+            acc = calculate_accuracy(output, trg) # ✅ 计算
+            
             epoch_loss += loss.item()
+            epoch_acc += acc.item() # ✅ 累加
 
-    return epoch_loss / len(iterator)
+    # 🚨 [关键修复] 必须返回两个值，匹配主程序的解包
+    return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
 
 # ==========================================
@@ -152,12 +182,12 @@ if __name__ == "__main__":
         print(f"❌ 找不到数据文件，请先运行 tokenize_data.py")
         sys.exit(1)
 
-    # V3.3+ 开启增强
-    train_dataset = MusicDataset(config.TRAIN_DATASET_PATH, augment=True)
+    # V3.3+ 开启增强 V3.6 训练时关闭增强
+    train_dataset = MusicDataset(config.TRAIN_DATASET_PATH, augment=False)
     val_dataset = MusicDataset(config.VAL_DATASET_PATH, augment=False)
 
     print(f"📊 数据加载完成:")
-    print(f"   - Train: {len(train_dataset)} (Noise ON)")
+    print(f"   - Train: {len(train_dataset)} (Noise Off)")
     print(f"   - Val:   {len(val_dataset)} (Clean)")
 
     train_loader = DataLoader(
@@ -229,7 +259,7 @@ if __name__ == "__main__":
     best_valid_loss = float("inf")
 
     # Checkpoint 目录 (自动包含版本号或时间戳是个好习惯，这里沿用您的路径)
-    checkpoint_dir = os.path.join(config.MODEL_DIR, "checkpoints/V3.4")
+    checkpoint_dir = os.path.join(config.MODEL_DIR, "checkpoints/V3.6")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     try:
@@ -240,7 +270,7 @@ if __name__ == "__main__":
             current_tf_ratio = get_current_tf_ratio(epoch)
 
             # 2. 训练
-            train_loss = train(
+            train_loss, train_acc = train(
                 model,
                 train_loader,
                 optimizer,
@@ -251,7 +281,7 @@ if __name__ == "__main__":
             )
 
             # 3. 验证
-            valid_loss = evaluate(model, val_loader, criterion, device)
+            valid_loss, valid_acc = evaluate(model, val_loader, criterion, device)
 
             end_time = time.time()
             epoch_mins, epoch_secs = divmod(end_time - start_time, 60)
@@ -265,15 +295,20 @@ if __name__ == "__main__":
                 torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
                 status_msg.append("🏆 Best!")
 
-            # ✅ [修复] 保存 Checkpoint (每 1 轮存一次，且保留最后一轮)
+            # 保存 Checkpoint
             if (epoch + 1) % 1 == 0 or (epoch + 1) == config.N_EPOCHS:
                 cp_name = f"epoch_{epoch + 1:03d}_loss_{valid_loss:.4f}.pth"
                 cp_path = os.path.join(checkpoint_dir, cp_name)
                 torch.save(model.state_dict(), cp_path)
                 status_msg.append(f"💾 Saved")
 
+            # ✅ [优化] 打印格式包含准确率
+            # 格式: Train Loss (Acc) | Val Loss (Acc)
             print(
-                f"{epoch + 1:<6} | {int(epoch_mins)}m {int(epoch_secs)}s    | {train_loss:.4f}       | {valid_loss:.4f}       | {current_tf_ratio:.2f}       | {' '.join(status_msg)}"
+                f"{epoch + 1:<6} | {int(epoch_mins)}m {int(epoch_secs)}s    | "
+                f"{train_loss:.4f} ({train_acc:.2%}) | "
+                f"{valid_loss:.4f} ({valid_acc:.2%}) | "
+                f"{current_tf_ratio:.2f}       | {' '.join(status_msg)}"
             )
 
     except KeyboardInterrupt:
