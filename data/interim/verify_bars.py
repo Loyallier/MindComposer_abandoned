@@ -86,7 +86,7 @@ def analyze_file(file_path):
     print(f"❌ 含有巨大畸形小节 (>32 tokens) 的歌曲: {songs_with_giant_bars}")
     
     print("\n[Token 长度分布 Top 10] (理想值应该是 16, 12, 8 等)")
-    for length, count in bar_length_counter.most_common(10):
+    for length, count in bar_length_counter.most_common(100):
         divisible_by_4 = "✅" if length % 4 == 0 and length > 0 else "❌"
         # 16 = 4/4拍, 12 = 3/4拍 或 6/8拍
         remark = ""

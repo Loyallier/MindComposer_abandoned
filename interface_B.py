@@ -13,7 +13,7 @@ if project_root not in sys.path:
 # 2. 导入 B 组核心功能
 try:
     # 导入 B 组的主入口函数
-    from TextureRender_B.decision_logic_B import render_accompaniment_from_raw_inputs
+    from src.TextureRender_B.decision_logic_B import render_accompaniment_from_raw_inputs
     import music21 as m21
 except ImportError as e:
     print(f"❌ Group B 导入错误: {e}")

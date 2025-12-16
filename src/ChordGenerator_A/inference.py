@@ -1,133 +1,120 @@
 import torch
 import os
 import sys
-# 强行把根目录加入 sys.path
-# 1. 获取所在的目录 (src/ChordGenerator_A)
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# 2. 往上跳两级，找到根目录 (src -> Root)
 project_root = os.path.dirname(os.path.dirname(current_dir))
-# 3. 加入路径
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-    print(f"🔧 已将根目录挂载: {project_root}")
 
-# ✅ 统一引用：干干净净，没有 try-except
 from src import path
 from src.ChordGenerator_A import config
 from src.ChordGenerator_A import utils
 from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
 
+
 class AIComposer:
     def __init__(self):
-        """
-        初始化 AI 作曲家
-        配置来源: src/config.py
-        工具来源: src/utils.py
-        """
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"🤖 AI Composer 正在初始化 (Device: {self.device})...")
-
-        # 1. 加载字典
-        if not os.path.exists(config.VOCAB_PATH):
-             raise FileNotFoundError(f"❌ 找不到字典文件: {config.VOCAB_PATH} (请检查 src/config.py 路径)")
-             
-        print(f"📖 正在加载字典: {config.VOCAB_PATH}")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # ... (Vocab loading logic same as before) ...
         self.vocab = utils.load_vocab(config.VOCAB_PATH)
-        
-        self.melody_stoi = self.vocab['melody']
-        # 反向查找表: ID -> 和弦名
-        self.harmony_itos = {v: k for k, v in self.vocab['harmony'].items()}
-        
-        # 2. 构建模型架构 (参数直接读取 config，确保与训练一致)
+        self.melody_stoi = self.vocab["melody"]
+        self.harmony_itos = {v: k for k, v in self.vocab["harmony"].items()}
+
+        # 模型初始化
         input_dim = len(self.melody_stoi)
-        output_dim = len(self.vocab['harmony'])
-        
-        enc = Encoder(input_dim, config.ENC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
+        output_dim = len(self.vocab["harmony"])
+
+        # ✅ 必须传入 pos 参数
+        enc = Encoder(
+            input_dim,
+            config.ENC_EMB_DIM,
+            config.HIDDEN_DIM,
+            config.DROPOUT,
+            config.POS_VOCAB_SIZE,
+            config.POS_EMB_DIM,
+        )
         dec = Decoder(output_dim, config.DEC_EMB_DIM, config.HIDDEN_DIM, config.DROPOUT)
-        
+
         self.model = Seq2Seq(enc, dec, self.device).to(self.device)
-        
-        # 3. 加载权重
+
         if not os.path.exists(config.MODEL_SAVE_PATH):
-            raise FileNotFoundError(f"❌ 找不到模型文件: {config.MODEL_SAVE_PATH} (请先运行 train.py)")
-            
-        print(f"⚖️ 正在加载模型权重: {config.MODEL_SAVE_PATH}")
-        # weights_only=True 解决 FutureWarning 安全警告
-        self.model.load_state_dict(torch.load(config.MODEL_SAVE_PATH, map_location=self.device, weights_only=True))
-        
-        self.model.eval() # 开启评估模式
-        print("✅ AI Composer 准备就绪！")
+            raise FileNotFoundError(f"❌ Weights not found: {config.MODEL_SAVE_PATH}")
 
-    def predict(self, melody_list, temperature=1.0, top_k=3):
+        self.model.load_state_dict(
+            torch.load(config.MODEL_SAVE_PATH, map_location=self.device, weights_only=True)
+        )
+        self.model.eval()
+
+    def predict(self, melody_list, pos_list):
         """
-        【核心接口】
-        :param melody_list: 旋律 Token 列表
-        :param temperature: 温度 (建议 0.8-1.0)。越低越保守。
-        :param top_k: 只在概率最高的 k 个选项里抽样 (防止乱猜)。
+        [V3.1 Update]
+        :param melody_list: ['60', '62', '<BAR>']
+        :param pos_list:    [14,   15,    31] (外部计算好的绝对位置)
         """
-        # 1. 清洗与转换 (调用 utils，保证一致性)
-        clean_seq = [utils.clean_melody_token(t) for t in melody_list]
-        src_tensor, src_len = utils.token_to_tensor(clean_seq, self.melody_stoi, self.device)
-        
+        temperature = config.INFERENCE_TEMP
+        top_k = config.INFERENCE_TOP_K
+
+        # 1. 转换 Tensor (使用外部传入的 Pos)
+        src_tensor, pos_tensor, src_len = utils.token_to_tensor_v3_with_pos(
+            melody_list, pos_list, self.melody_stoi, self.device
+        )
+
         predicted_chords = []
-        
-        with torch.no_grad():
-            # A. 编码器 (Encoder)
-            encoder_outputs, hidden, cell = self.model.encoder(src_tensor, src_len)
-            
-            # B. 调整 Hidden 状态
-            hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim=1).unsqueeze(0)
-            cell = torch.cat((cell[-2,:,:], cell[-1,:,:]), dim=1).unsqueeze(0)
-            
-            # C. 解码器 (Decoder) 初始化输入 <SOS>
-            sos_id = self.vocab['harmony'].get(config.SOS_TOKEN)
-            trg_token = torch.tensor([sos_id], device=self.device)
-            
-            # D. 循环生成
-            for step in range(len(clean_seq)):
-                output, hidden, cell = self.model.decoder(trg_token, hidden, cell, encoder_outputs)
-                
-                # ==========================================
-                # 🌟 Top-K 采样逻辑 (解决 AI 偷懒的关键)
-                # ==========================================
-                
-                # 应用温度
-                logits = output / temperature
-                
-                # 只保留前 K 个最大的概率
-                top_k_logits, top_k_indices = torch.topk(logits, top_k, dim=1)
-                
-                # 对这 K 个进行 softmax
-                top_k_probs = torch.softmax(top_k_logits, dim=1)
-                
-                # 在这 K 个里抽签
-                sample_idx_in_top_k = torch.multinomial(top_k_probs, num_samples=1).squeeze(1)
-                
-                # 映射回原始词表的 ID
-                top1 = top_k_indices.gather(1, sample_idx_in_top_k.unsqueeze(1)).squeeze(1)
 
-                # ==========================================
+        # ✅ 获取 EOS 的整数 ID (用于 Logit 屏蔽)
+        eos_id = self.vocab["harmony"].get(config.EOS_TOKEN)
+
+        with torch.no_grad():
+            # A. Encoder (传入 pos_tensor)
+            encoder_outputs, hidden, cell = self.model.encoder(
+                src_tensor, pos_tensor, src_len
+            )
+
+            # Bridge
+            hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1).unsqueeze(0)
+            cell = torch.cat((cell[-2, :, :], cell[-1, :, :]), dim=1).unsqueeze(0)
+
+            # Decoder Input
+            sos_id = self.vocab["harmony"].get(config.SOS_TOKEN)
+            trg_token = torch.tensor([sos_id], device=self.device)
+
+            for step, input_token_str in enumerate(melody_list):
+                output, hidden, cell = self.model.decoder(
+                    trg_token, hidden, cell, encoder_outputs
+                )
+
+                # 🛑 [关键修正] 必须保持 1:1 对齐
+                # 遇到 BAR，必须在输出里占位，不能只 continue
+                if input_token_str == config.BAR_TOKEN:
+                    bar_id = self.vocab["harmony"].get(config.BAR_TOKEN)
+                    trg_token = torch.tensor([bar_id], device=self.device)
+                    
+                    # ✅ 显式加入结果列表
+                    predicted_chords.append(config.BAR_TOKEN)
+                    continue
+
+                logits = output / temperature
+                # 🔥 [关键修改] 强制屏蔽 EOS 🔥
+                # 只要循环还没结束，就绝对不允许生成 EOS
+                if eos_id is not None:
+                    logits[:, eos_id] = -float("inf")
+
+                top_k_logits, top_k_indices = torch.topk(logits, top_k, dim=1)
+                top_k_probs = torch.softmax(top_k_logits, dim=1)
+                sample_idx = torch.multinomial(top_k_probs, num_samples=1).squeeze(1)
+                top1 = top_k_indices.gather(1, sample_idx.unsqueeze(1)).squeeze(1)
 
                 chord_str = self.harmony_itos.get(top1.item(), config.UNK_TOKEN)
                 predicted_chords.append(chord_str)
                 trg_token = top1
-                
+
         return predicted_chords
 
-# ================= 单元测试 =================
+
 if __name__ == "__main__":
-    try:
-        print("正在测试 inference.py ...")
-        composer = AIComposer()
-        
-        # 测试用例
-        test_melody = ['60', '_','_','_', '60','_','_','_', '67','_','_','_', '67','_','_','_', '69','_','_','_', '69','_','_','_', '67','_','_','_', '0']
-        print(f"\n🎵 输入: {test_melody}")
-        
-        # 对比测试：Top-K=1 (死板) vs Top-K=3 (灵活)
-        print(f"🎹 输出 (Top-K=1): {composer.predict(test_melody, top_k=1)}")
-        print(f"🎹 输出 (Top-K=3): {composer.predict(test_melody, top_k=3)}")
-        print("✅ 测试通过！")
-        
-    except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+    composer = AIComposer()
+    test_melody = ["60", "_", "_", "_", config.BAR_TOKEN, "62", "_", "_", "_"]
+    print(f"\n🎵 Input: {test_melody}")
+    result = composer.predict(test_melody)
+    print(f"🎹 Output: {result}")

@@ -237,7 +237,7 @@ def sample_stream(score, step_size=0.25):
     return melody_tokens, chord_tokens
 
 def process_all_files():
-    files = glob.glob(os.path.join(RAW_DIR, "*.txt"))
+    files = glob.glob(os.path.join(RAW_DIR, "*.abc"))
     print(f"🚀 开始处理 {len(files)} 个文件...")
     print(f"   - 目标重心 (Target Centroid): MIDI {TARGET_CENTROID}")
     print(f"   - 严格边界 (Hard Bounds): {HARD_MIN_PITCH} ~ {HARD_MAX_PITCH}")
