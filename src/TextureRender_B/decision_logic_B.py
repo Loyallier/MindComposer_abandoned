@@ -16,7 +16,7 @@ logger = logging.getLogger("B_Decision")
 # MIDI 力度值映射参数 (Velocity Mapping Parameters)
 # MIDI 力度范围是 0-127
 MAX_VELOCITY = 127 # 伴奏音符最大力度
-MIN_VELOCITY = 80  # 伴奏音符最小力度
+MIN_VELOCITY = 100  # 伴奏音符最小力度
 
 # 强弱拍相对力度权重 (用于 4/4 和 3/4 拍，基于 QuarterLength 偏移)
 # Key: 模板的总时长 (QL)
@@ -172,9 +172,20 @@ def generate_accompaniment_part(
 ) -> m21.stream.Part:
     """
     根据和弦序列、旋律密度和风格，生成左手伴奏 music21.Part。
+    
+    关键改动：
+    1. 在 Part 开头插入 m21.dynamics.Dynamic('f')，提升整体响度。
+    2. 确保使用了更高的 MIN_VELOCITY（此修改在代码外部的常量定义处）。
     """
     accompaniment_part = m21.stream.Part()
     accompaniment_part.insert(0, m21.instrument.Piano()) # 设置乐器
+    
+    # ***** 【改动 1】 插入整体动态标记 f (forte, 强) *****
+    # 这将在 MIDI 文件的 Track Volume 上提供一个更强的基准音量。
+    accompaniment_part.insert(0, m21.dynamics.Dynamic('f')) 
+    # 如果 f 不够，可以使用 'ff' (fortissimo, 很强)
+    # accompaniment_part.insert(0, m21.dynamics.Dynamic('ff')) 
+    # ********************************************************
     
     current_offset = 0.0
     num_chords = len(consolidated_chords)
@@ -187,25 +198,23 @@ def generate_accompaniment_part(
         chord_label, segment_length = consolidated_chords[i]
         density = melody_densities[i] # 获取当前片段的密度
         
-        # 1. 解析和弦标签
+        # 1. 解析和弦标签 (略)
         root_name, chord_type = parse_simplified_chord(chord_label)
         
         if chord_type not in CHORD_TYPES:
             logger.warning(f"未知和弦类型: {chord_type}，跳过该片段。")
             current_offset += segment_length
             continue
-            
-        # 处理 NoChord/休止符号 '0'
+        
         if chord_type == 'NoChord':
             logger.debug(f"和弦 {chord_label} 为 NoChord/休止，跳过该片段，不生成伴奏。")
             current_offset += segment_length
             continue
             
         offsets = CHORD_TYPES[chord_type]
-        # 根音定在 C3 (MIDI 48) 八度，作为琶音或其他音符的基准
         root_midi = m21.pitch.Pitch(root_name + '3').midi 
 
-        # 2. 决策：选择织体模板
+        # 2. 决策：选择织体模板 (略)
         pattern_name = select_texture_pattern(selected_style, density)
         template = PATTERN_TEMPLATES.get(pattern_name)
         
@@ -216,40 +225,32 @@ def generate_accompaniment_part(
             
         logger.debug(f"和弦 {chord_label}, 时长 {segment_length:.2f} QL, 织体 {pattern_name}")
 
-        # 3. 实例化音符并插入 Part (关键步骤：循环填充整个和弦时长)
+        # 3. 实例化音符并插入 Part (循环填充整个和弦时长)
         time_elapsed_in_segment = 0.0
         
-        # 确定模板的时长，以便重复填充
         template_duration = 4.0 
         if pattern_name == "Waltz":
             template_duration = 3.0
         
-        # 不断重复模板，直到填满整个 segment_length
         while time_elapsed_in_segment < segment_length:
             
-            # 用于记录当前模板周期中最后一个音符的结束时间
             last_note_end_time = time_elapsed_in_segment
             
             for time_offset, index, duration in template:
                 
-                # 检查此音符是否会超出和弦片段的剩余时间
                 note_start_time = time_elapsed_in_segment + time_offset
-                original_duration = duration 
                 
                 if note_start_time >= segment_length:
-                    # 如果音符起始时间已经超过片段长度，跳出模板循环
                     break 
                 
                 note_end_time = note_start_time + duration
                 
                 if note_end_time > segment_length:
-                    # 截断音符时长，使其恰好在片段结束
                     duration = segment_length - note_start_time
                 
-                # 确保索引在 offsets 范围内
                 offset_value = offsets[index % len(offsets)]
                 
-                # 根音（index=0）通常放置在更低的八度（C2），其他音符在中八度（C3）
+                # ... (音高计算略) ...
                 if index == 0:
                     note_midi = m21.pitch.Pitch(root_name + '2').midi + offset_value
                 else:
@@ -259,29 +260,26 @@ def generate_accompaniment_part(
                 note.midi = note_midi
                 note.duration.quarterLength = duration
                 
-                # ***** 新增：计算并设置 MIDI 力度 (Velocity) *****
+                # ***** 【改动 2 验证】 确保 calculate_velocity 使用了更高的 MIN_VELOCITY *****
                 note_velocity = calculate_velocity(
                     segment_offset=note_start_time, 
                     density=density, 
                     template_duration=template_duration
                 )
                 note.volume.velocity = note_velocity
-                # ************************************************
+                # ******************************************************************************
                 
                 # 插入到 Part 中
                 accompaniment_part.insert(current_offset + note_start_time, note)
                 
-                # 更新当前模板周期中最后一个音符的结束时间
                 last_note_end_time = current_offset + note_start_time + duration
 
-            
             # 推进已用时间（使用模板的完整时长）
             time_elapsed_in_segment += template_duration
             
             # 如果上一个模板周期在片段内结束，但下一个模板周期会超出，则退出循环
             if time_elapsed_in_segment > segment_length and time_elapsed_in_segment - template_duration == last_note_end_time:
                 break
-
 
         # 推进到下一个和弦的起始时间
         current_offset += segment_length
