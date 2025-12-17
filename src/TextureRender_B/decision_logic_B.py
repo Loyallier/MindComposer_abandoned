@@ -2,7 +2,15 @@ import music21 as m21
 from typing import List, Dict, Tuple
 import logging
 import math
-from TextureRender_B.data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
+import os
+import sys
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(current_dir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from src.TextureRender_B.data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
 
 # 初始化日志
 logger = logging.getLogger("B_Decision")

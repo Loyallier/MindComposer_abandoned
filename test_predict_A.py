@@ -83,7 +83,7 @@ def run_test(midi_path):
 if __name__ == "__main__":
     # ===在此处修改测试文件的路径===
     # 默认路径: data/raw/test.mid
-    test_file = os.path.join("samples", "audit_detailed", "case_1_1_Melody.mid")
+    test_file = os.path.join("outputs", "melody_20251217_014253.mid")
     
     # 如果您想手动指定绝对路径，请取消注释下一行：
     # test_file = r"C:\Your\Path\To\melody.mid"

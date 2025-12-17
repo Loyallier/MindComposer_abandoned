@@ -17,14 +17,14 @@ except ImportError as e:
 
 # 导入 B 组接口
 try:
-    from interface_B import render_accompaniment
+    from src.TextureRender_B.decision_logic_B import render_accompaniment_from_raw_inputs
     print("✅ Group B (Interface) 导入成功")
 except ImportError as e:
     print(f"❌ Group B 导入失败: {e}")
-    render_accompaniment = None
+    render_accompaniment_from_raw_inputs = None
 
 # ================= 2. 配置 =================
-TEST_MIDI_PATH = os.path.join("samples", "test_melody.mid")
+TEST_MIDI_PATH = os.path.join("outputs", "melody_20251217_014253.mid")
 OUTPUT_MIDI_PATH = os.path.join("samples", "final_integrated_output.mid")
 TARGET_STYLE = "Pop Ballad" 
 
@@ -55,16 +55,16 @@ def main():
     # --- Step 2: Group B (织体渲染) ---
     print(f"\n[Step 2] 正在调用 Group B 接口渲染伴奏...")
     
-    if render_accompaniment is None:
+    if render_accompaniment_from_raw_inputs is None:
         print("❌ B组接口不可用，跳过。")
         return
 
     try:
         # B组返回的是一个 music21.stream.Part 对象
-        accompaniment_part = render_accompaniment(
-            melody_midi_path=TEST_MIDI_PATH,
+        accompaniment_part = render_accompaniment_from_raw_inputs(
+            melody_path=TEST_MIDI_PATH,
             chord_sequence=chord_tokens,
-            style=TARGET_STYLE
+            selected_style=TARGET_STYLE
         )
         
         if accompaniment_part is None or len(accompaniment_part.flatten().notes) == 0:
