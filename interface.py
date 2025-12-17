@@ -60,6 +60,16 @@ def main():
         return
 
     try:
+        # 调试代码
+        print(f"   [DEBUG] A组原始 Tokens 预览: {chord_tokens[:16]}")
+        
+        # 模拟 B 组内部合并逻辑进行检查 (请确保路径正确)
+        from src.TextureRender_B.decision_logic_B import _consolidate_chords
+        test_consolidated = _consolidate_chords(chord_tokens)
+        print(f"   [DEBUG] 合并后的片段数: {len(test_consolidated)}")
+        for i, (ch, dur) in enumerate(test_consolidated[:5]):
+            print(f"      - 片段 {i}: 和弦={ch}, 时长={dur}QL")
+            
         # B组返回的是一个 music21.stream.Part 对象
         accompaniment_part = render_accompaniment_from_raw_inputs(
             melody_path=TEST_MIDI_PATH,

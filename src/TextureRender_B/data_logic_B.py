@@ -21,52 +21,28 @@ CHORD_TYPES: Dict[str, List[int]] = {
 }
 
 # B. 和弦解析函数 (Chord Parsing Function)
-def parse_simplified_chord(chord_label: str) -> Tuple[str, str]:
-    """
-    将简化的和弦标签解析为根音名称和和弦类型。
-    例如: 'C#m7' -> ('C#', 'min7')
-    """
+def parse_simplified_chord(chord_label: str):
+    if not chord_label or chord_label in ['0', '_', 'None', 'N.C.']:
+        return 'C', 'NoChord'
     
-    # 【新增】特殊符号处理：'0' 和 '_' 不通过标准解析
-    if chord_label == '0':
-        return 'C', 'NoChord' # 根音用 C 占位，类型为 NoChord
-    if chord_label == '_':
-        # 此函数不应处理 '_'，如果传入，说明调用逻辑有误，返回一个默认值
-        return 'C', 'Maj' 
-
-    root_name = ""
-    chord_type = ""
+    # 1. 预处理 A 组可能的格式 (如 C:maj -> C)
+    clean_label = str(chord_label).split(':')[0].split('/')[0]
     
-    # 提取可能的根音（A-G，可能带 # 或 b）
-    # 优先处理双字符根音 (e.g., 'A#', 'Bb')
-    if len(chord_label) >= 2 and chord_label[1] in ('#', 'b', '-'): 
-        root_name = chord_label[:2].replace('b', '-')
-        remaining = chord_label[2:]
-    elif chord_label and chord_label[0].isalpha(): 
-        # 简单根音（A, B, C, D, E, F, G）
-        root_name = chord_label[0]
-        remaining = chord_label[1:]
+    # 2. 提取根音 (处理 C# 或 Bb)
+    if len(clean_label) >= 2 and clean_label[1] in ('#', 'b', '-'):
+        root_name = clean_label[:2].replace('b', '-')
+        suffix = clean_label[2:]
     else:
-        return 'C', 'Maj' # 无法识别时默认返回 C Maj
+        root_name = clean_label[0]
+        suffix = clean_label[1:]
 
-    # 查找匹配的和弦类型 - 优先检查最长的后缀
-    if remaining.startswith('m7'): chord_type = 'min7'
-    elif remaining.startswith('min7'): chord_type = 'min7'
-    elif remaining.startswith('maj7'): chord_type = 'Maj7'
-    elif remaining.startswith('sus4'): chord_type = 'sus4'
-    elif remaining.startswith('dim'): chord_type = 'dim'
-    elif remaining.startswith('Maj6'): chord_type = 'Maj6'
-    elif remaining.startswith('min6'): chord_type = 'min6'
-    elif remaining.startswith('7'): chord_type = 'Dom7' # 【修改】处理 '7' 后缀
-    elif remaining.startswith('m'): chord_type = 'min' # 【修改】处理 'm' 后缀
-    elif remaining.startswith('min'): chord_type = 'min'
-    elif not remaining: 
-        # 【修改】无后缀，默认为大三和弦
-        chord_type = 'Maj'
-    else:
-        # 无法识别的后缀，默认为大三和弦
-        chord_type = 'Maj'
-        
+    # 3. 增强后缀识别 (兼容 Am, C, G7)
+    s = suffix.lower()
+    if s in ['', 'maj', 'major']: chord_type = 'Maj'
+    elif any(x in s for x in ['m', 'min']): chord_type = 'min'
+    elif '7' in s: chord_type = 'Dom7'
+    else: chord_type = 'Maj'
+    
     return root_name, chord_type
 
 # C. 伴奏织体模板 (Accompaniment Pattern Templates)

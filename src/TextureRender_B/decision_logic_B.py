@@ -2,15 +2,20 @@ import music21 as m21
 from typing import List, Dict, Tuple
 import logging
 import math
-import os
 import sys
+import os
 
+# 1. 路径挂载逻辑 (保持不变)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-
-from src.TextureRender_B.data_logic_B import CHORD_TYPES, PATTERN_TEMPLATES, parse_simplified_chord # 导入 Group B 知识库
+    print(f"🔧 已将根目录挂载: {project_root}")
+from src.TextureRender_B.data_logic_B import (
+    CHORD_TYPES,
+    PATTERN_TEMPLATES,
+    parse_simplified_chord,
+)  # 导入 Group B 知识库
 
 # 初始化日志
 logger = logging.getLogger("B_Decision")
@@ -23,8 +28,8 @@ logger = logging.getLogger("B_Decision")
 
 # MIDI 力度值映射参数 (Velocity Mapping Parameters)
 # MIDI 力度范围是 0-127
-MAX_VELOCITY = 127 # 伴奏音符最大力度
-MIN_VELOCITY = 100  # 伴奏音符最小力度
+MAX_VELOCITY = 100 # 伴奏音符最大力度
+MIN_VELOCITY = 40  # 伴奏音符最小力度
 
 # 强弱拍相对力度权重 (用于 4/4 和 3/4 拍，基于 QuarterLength 偏移)
 # Key: 模板的总时长 (QL)
@@ -83,80 +88,77 @@ def select_texture_pattern(style: str, density_score: float) -> str:
     """
     启发式算法：根据风格和旋律密度选择伴奏织体模板。
     """
-    
+
     # 如果密度高（旋律繁忙），倾向于选择稀疏的伴奏，避免冲突
     if density_score > DENSITY_THRESHOLD:
-        logger.debug(f"密度 {density_score:.2f} 较高，倾向于稀疏织体 (Sparse_Arpeggio)。")
+        logger.debug(
+            f"密度 {density_score:.2f} 较高，倾向于稀疏织体 (Sparse_Arpeggio)。"
+        )
         # 无论什么风格，都使用通用的稀疏琶音来避免冲突
-        return "Sparse_Arpeggio" 
-        
+        return "Sparse_Arpeggio"
+
     # 如果密度低（旋律稀疏），使用风格默认的织体
     else:
         logger.debug(f"密度 {density_score:.2f} 较低，使用风格默认织体: {style}")
         return style
 
+
 # 2. 预处理 A: 和弦片段整合与密度计算 (Pre-processing)
-def _consolidate_chords(chord_sequence: List[str], quantization_step: float = 0.25) -> List[Tuple[str, float]]:
-    """
-    将 16分音符切片和弦序列 (e.g., ['C', '_', '_', 'G']) 
-    整合为 (和弦标签, 时长 QL) 列表 [(C, 0.75), (G, 0.25)]。
-    """
-    consolidated = []
-    if not chord_sequence:
-        return consolidated
-        
-    current_chord = None
-    current_duration = 0.0
+def _consolidate_chords(chord_sequence, quantization_step=0.25):
+    if not chord_sequence: return []
     
-    for chord in chord_sequence:
-        if chord == '_':
-            # 延音：增加当前和弦的时长
-            current_duration += quantization_step
-        elif current_chord is None:
-            # 序列的第一个有效和弦
-            current_chord = chord
-            current_duration = quantization_step
-        elif chord == current_chord:
-            # 相同和弦：增加当前和弦的时长
+    consolidated = []
+    # 找到第一个非空的有效和弦
+    current_chord = 'C' 
+    for token in chord_sequence:
+        if token != '_':
+            current_chord = token
+            break
+            
+    current_duration = 0.0
+    for label in chord_sequence:
+        if label == '_' or label == current_chord:
             current_duration += quantization_step
         else:
-            # 遇到新和弦：保存上一个和弦，并开始新的计时
-            if current_duration > 0 and current_chord != '_':
+            # 只有当 current_chord 有效时才添加
+            if current_chord != '_':
                 consolidated.append((current_chord, current_duration))
-            
-            # 重置计时器
-            current_chord = chord
+            current_chord = label
             current_duration = quantization_step
             
-    # 确保最后一个和弦被添加
-    if current_duration > 0 and current_chord != '_':
+    # 确保最后一个片段
+    if current_chord != '_':
         consolidated.append((current_chord, current_duration))
-        
     return consolidated
 
-def _calculate_melody_density(melody_stream: m21.stream.Stream, consolidated_chords: List[Tuple[str, float]]) -> List[float]:
+
+def _calculate_melody_density(
+    melody_stream: m21.stream.Stream, consolidated_chords: List[Tuple[str, float]]
+) -> List[float]:
     """
     计算每个和弦片段内的旋律密度。
     密度 = (该片段内的音符数) / (片段时长 QL) / (参考速率)
     """
     density_scores = []
     current_offset = 0.0
-    
+
     # 提取旋律中的所有音符和休止符
     notes_and_rests = melody_stream.flat.notesAndRests
-    
+
     for chord_label, duration in consolidated_chords:
         segment_notes_count = 0
         segment_start = current_offset
         segment_end = current_offset + duration
-        
+
         # 遍历旋律中的事件，计算落在当前片段内的音符数
         for element in notes_and_rests:
             element_start = element.offset
-            
+
             # 检查是否是音符且其起始点在当前片段内 (使用小误差范围)
-            if isinstance(element, m21.note.Note) or isinstance(element, m21.chord.Chord):
-                if segment_start <= element_start < segment_end - 0.001: 
+            if isinstance(element, m21.note.Note) or isinstance(
+                element, m21.chord.Chord
+            ):
+                if segment_start <= element_start < segment_end - 0.001:
                     segment_notes_count += 1
 
         # 密度计算
@@ -165,12 +167,13 @@ def _calculate_melody_density(melody_stream: m21.stream.Stream, consolidated_cho
             density = math.sqrt(segment_notes_count / duration) * 0.7 
         else:
             density = 0.0
-            
+
         # 确保密度不超过 1.0
         density_scores.append(min(density, 1.0))
         current_offset += duration
-        
+
     return density_scores
+
 
 # 3. 核心引擎：伴奏 Part 生成 (Accompaniment Renderer)
 def generate_accompaniment_part(
@@ -178,137 +181,89 @@ def generate_accompaniment_part(
     melody_densities: List[float], 
     selected_style: str
 ) -> m21.stream.Part:
-    """
-    根据和弦序列、旋律密度和风格，生成左手伴奏 music21.Part。
     
-    关键改动：
-    1. 在 Part 开头插入 m21.dynamics.Dynamic('f')，提升整体响度。
-    2. 确保使用了更高的 MIN_VELOCITY（此修改在代码外部的常量定义处）。
-    """
     accompaniment_part = m21.stream.Part()
-    accompaniment_part.insert(0, m21.instrument.Piano()) # 设置乐器
+    accompaniment_part.insert(0, m21.instrument.Piano())
     
-    # ***** 【改动 1】 插入整体动态标记 f (forte, 强) *****
-    # 这将在 MIDI 文件的 Track Volume 上提供一个更强的基准音量。
-    accompaniment_part.insert(0, m21.dynamics.Dynamic('f')) 
-    # 如果 f 不够，可以使用 'ff' (fortissimo, 很强)
-    # accompaniment_part.insert(0, m21.dynamics.Dynamic('ff')) 
-    # ********************************************************
-    
+    # 1. 初始化全局偏移量（追踪整个曲子的时间线）
     current_offset = 0.0
-    num_chords = len(consolidated_chords)
     
-    if num_chords != len(melody_densities):
-        logger.error("和弦片段数量与密度数量不匹配，生成可能出错！")
-        return accompaniment_part
-
-    for i in range(num_chords):
+    for i in range(len(consolidated_chords)):
         chord_label, segment_length = consolidated_chords[i]
-        density = melody_densities[i] # 获取当前片段的密度
+        density = melody_densities[i]
         
-        # 1. 解析和弦标签 (略)
+        # 2. 解析和弦：确保调用了能识别 'Am' 的增强版解析器
         root_name, chord_type = parse_simplified_chord(chord_label)
         
-        if chord_type not in CHORD_TYPES:
-            logger.warning(f"未知和弦类型: {chord_type}，跳过该片段。")
-            current_offset += segment_length
-            continue
-        
-        if chord_type == 'NoChord':
-            logger.debug(f"和弦 {chord_label} 为 NoChord/休止，跳过该片段，不生成伴奏。")
+        if chord_type == 'NoChord' or chord_type not in CHORD_TYPES:
             current_offset += segment_length
             continue
             
         offsets = CHORD_TYPES[chord_type]
-        root_midi = m21.pitch.Pitch(root_name + '3').midi 
+        root_midi = m21.pitch.Pitch(root_name + '3').midi
 
-        # 2. 决策：选择织体模板 (略)
+        # 3. 获取模板：比如 Pop Ballad (4拍一循环)
         pattern_name = select_texture_pattern(selected_style, density)
-        template = PATTERN_TEMPLATES.get(pattern_name)
-        
-        if not template:
-            logger.warning(f"风格 {pattern_name} 无模板，回退到 Pop Ballad。")
-            template = PATTERN_TEMPLATES["Pop Ballad"]
-            pattern_name = "Pop Ballad" 
-            
-        logger.debug(f"和弦 {chord_label}, 时长 {segment_length:.2f} QL, 织体 {pattern_name}")
+        template = PATTERN_TEMPLATES.get(pattern_name, PATTERN_TEMPLATES["Pop Ballad"])
+        template_duration = 3.0 if pattern_name == "Waltz" else 4.0
 
-        # 3. 实例化音符并插入 Part (循环填充整个和弦时长)
+        # --- 【关键修复：段内计时重置】 ---
+        # 每一个新和弦片段（如片段1的6.0QL）开始时，必须重置段内流逝时间
         time_elapsed_in_segment = 0.0
         
-        template_duration = 4.0 
-        if pattern_name == "Waltz":
-            template_duration = 3.0
-        
-        while time_elapsed_in_segment < segment_length:
-            
-            last_note_end_time = time_elapsed_in_segment
-            
+        # 循环填充，直到填满这个片段的时长
+        while time_elapsed_in_segment < segment_length - 0.01:
             for time_offset, index, duration in template:
+                # 计算这个音符在当前片段内的相对起始时间
+                note_start_in_segment = time_elapsed_in_segment + time_offset
                 
-                note_start_time = time_elapsed_in_segment + time_offset
+                # 如果这个音符已经超出当前和弦的范围，就不画了（防止覆盖下一个和弦）
+                if note_start_in_segment >= segment_length - 0.01:
+                    break
                 
-                if note_start_time >= segment_length:
-                    break 
+                # 计算音高
+                # index 0 通常是 Bass 音（低八度），其他是和弦内音
+                pitch_midi = (m21.pitch.Pitch(root_name + '2').midi if index == 0 
+                             else root_midi) + offsets[index % len(offsets)]
                 
-                note_end_time = note_start_time + duration
+                # 创建音符对象
+                n = m21.note.Note(midi=pitch_midi)
                 
-                if note_end_time > segment_length:
-                    duration = segment_length - note_start_time
+                # 时长修正：确保最后一个音符在和弦切换点被切齐
+                actual_duration = duration
+                if note_start_in_segment + duration > segment_length:
+                    actual_duration = segment_length - note_start_in_segment
+                n.duration.quarterLength = actual_duration
                 
-                offset_value = offsets[index % len(offsets)]
-                
-                # ... (音高计算略) ...
-                if index == 0:
-                    note_midi = m21.pitch.Pitch(root_name + '2').midi + offset_value
-                else:
-                    note_midi = root_midi + offset_value
+                # 力度计算
+                n.volume.velocity = calculate_velocity(note_start_in_segment, density, template_duration)
 
-                note = m21.note.Note()
-                note.midi = note_midi
-                note.duration.quarterLength = duration
-                
-                # ***** 【改动 2 验证】 确保 calculate_velocity 使用了更高的 MIN_VELOCITY *****
-                note_velocity = calculate_velocity(
-                    segment_offset=note_start_time, 
-                    density=density, 
-                    template_duration=template_duration
-                )
-                note.volume.velocity = note_velocity
-                # ******************************************************************************
-                
-                # 插入到 Part 中
-                accompaniment_part.insert(current_offset + note_start_time, note)
-                
-                last_note_end_time = current_offset + note_start_time + duration
+                # 【核心逻辑】：插入位置 = 全局累计偏移 + 段内相对偏移
+                accompaniment_part.insert(current_offset + note_start_in_segment, n)
 
-            # 推进已用时间（使用模板的完整时长）
+            # 模板步进（例如 4/4 拍就推进 4 拍）
             time_elapsed_in_segment += template_duration
             
-            # 如果上一个模板周期在片段内结束，但下一个模板周期会超出，则退出循环
-            if time_elapsed_in_segment > segment_length and time_elapsed_in_segment - template_duration == last_note_end_time:
-                break
-
-        # 推进到下一个和弦的起始时间
+        # 4. 片段处理完毕，全局偏移向前推进，准备接下一个和弦
         current_offset += segment_length
+        # --- 【修复结束】 ---
 
     return accompaniment_part
 
+
 # 4. B组主入口：从原始输入到生成 Part (Main B-Group Entry)
 def render_accompaniment_from_raw_inputs(
-    melody_path: str, 
-    chord_sequence: List[str], 
-    selected_style: str
+    melody_path: str, chord_sequence: List[str], selected_style: str
 ) -> m21.stream.Part:
     """
     B组的完整流程：解析输入，计算密度，选择模板，渲染 Part。
     供 main_pipeline.py 中的 render_music 函数调用。
     """
     logger.info("开始 B 组预处理：整合和弦和计算密度...")
-    
+
     # 1. 和弦整合
     consolidated_chords = _consolidate_chords(chord_sequence)
-    
+
     # 2. 解析旋律 MIDI 文件
     try:
         melody_stream = m21.converter.parse(melody_path)
@@ -316,17 +271,17 @@ def render_accompaniment_from_raw_inputs(
         logger.error(f"无法解析旋律 MIDI 文件: {e}")
         # 如果解析失败，返回一个空的 Part
         return m21.stream.Part()
-    
+
     # 3. 密度计算
     melody_densities = _calculate_melody_density(melody_stream, consolidated_chords)
-    
-    logger.info(f"和弦片段数量: {len(consolidated_chords)}, 密度分数示例: {melody_densities[:3]}")
+
+    logger.info(
+        f"和弦片段数量: {len(consolidated_chords)}, 密度分数示例: {melody_densities[:3]}"
+    )
 
     # 4. 渲染伴奏 Part
     accompaniment_part = generate_accompaniment_part(
-        consolidated_chords, 
-        melody_densities, 
-        selected_style
+        consolidated_chords, melody_densities, selected_style
     )
-    
+
     return accompaniment_part
