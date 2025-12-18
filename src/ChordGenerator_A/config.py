@@ -43,8 +43,8 @@ CLIP = 1
 # 【新增控制开关】
 # True = 尝试加载 best_model.pth 继续训练
 # False = 忽略旧模型，强制从头开始
-RESUME_TRAINING = True
-START_EPOCH = 3  # 您上次大概训练到的轮数
+RESUME_TRAINING = False
+START_EPOCH = 0  # 您上次大概训练到的轮数
 
 # 【进阶设置 - 新增】
 SEED = 42  # 随机种子 (保证每次训练结果可复现)
