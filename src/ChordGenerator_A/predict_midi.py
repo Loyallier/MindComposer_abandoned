@@ -2,9 +2,9 @@ import os
 import sys
 import music21
 import math
-import json  # 需要读取 vocab
+import json  # Need to read vocab
 
-# 路径挂载
+# Path mounting
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
@@ -15,40 +15,40 @@ from src.ChordGenerator_A import config
 from src.ChordGenerator_A import utils
 from src.ChordGenerator_A.inference import AIComposer
 
-# 引入预处理逻辑
+# Import preprocessing logic
 try:
     from src.preprocessing_A.ABC_normalization import sample_stream
 except ImportError:
-    raise ImportError("❌ [Fatal] 无法导入 src/preprocessing_A/ABC_normalization.py")
+    raise ImportError("❌ [Fatal] Unable to import src/preprocessing_A/ABC_normalization.py")
 
 
 class MidiPreprocessor:
     """
-    职责: MIDI 解析、调性分析、智能八度匹配、转调
+    Responsibilities: MIDI parsing, key analysis, smart octave matching, transposition
     """
 
     def __init__(self):
-        # 加载词表以进行智能覆盖率计算
+        # Load vocabulary for smart coverage calculation
         self.vocab = utils.load_vocab(path.VOCAB_PATH)
-        # 提取旋律词表中所有的有效数字 Key (排除特殊符号)
+        # Extract all valid digit Keys from the melody vocabulary (excluding special symbols)
         self.valid_vocab_pitches = set()
         for k in self.vocab["melody"].keys():
             if k.isdigit():
                 self.valid_vocab_pitches.add(int(k))
 
         if not self.valid_vocab_pitches:
-            raise ValueError("❌ 词表异常: 未找到有效的旋律 Pitch Key")
+            raise ValueError("❌ Vocabulary anomaly: No valid melody Pitch Keys found")
 
     def get_melody_stream(self, score):
-        # 优先查找是否有 Part 明确标记为 Melody
+        # Prioritize finding if a Part is explicitly marked as Melody
         if score.hasPartLikeStreams():
-            # 简单策略：取音符最多的那个 Part，或者是第一个 Part
-            # 优化：通常高音部是旋律，取平均音高较高的 Part 可能更准，但这里暂时取 Part 0
+            # Simple strategy: take the Part with the most notes, or the first Part
+            # Optimization: Usually the treble is the melody; taking the Part with a higher average pitch might be more accurate, but for now, we take Part 0
             return score.parts[0]
         return score
 
     def _calculate_vocab_coverage(self, pitches):
-        """计算音符列表在词表中的覆盖率"""
+        """Calculate the coverage rate of the note list within the vocabulary"""
         if not pitches:
             return 0.0
         in_vocab_count = sum(1 for p in pitches if p in self.valid_vocab_pitches)
@@ -56,9 +56,9 @@ class MidiPreprocessor:
 
     def _smart_octave_shift(self, stream):
         """
-        算法: 尝试 -2, -1, 0, +1, +2 个八度，选择词表覆盖率最高且距离中心最近的偏移
+        Algorithm: Try -2, -1, 0, +1, +2 octaves, selecting the offset with the highest vocabulary coverage and closest distance to the center
         """
-        # 1. 提取所有 Pitch
+        # 1. Extract all Pitches
         raw_pitches = [
             p.midi
             for n in stream.recurse().notes
@@ -66,19 +66,19 @@ class MidiPreprocessor:
         ]
 
         if not raw_pitches:
-            raise ValueError("❌ MIDI 轨道中未检测到有效音符")
+            raise ValueError("❌ No valid notes detected in MIDI track")
 
         best_shift = 0
         max_coverage = -1.0
 
-        # 搜索范围: -24 到 +24 (两个八度)
+        # Search range: -24 to +24 (two octaves)
         candidates = [-24, -12, 0, 12, 24]
 
         for shift in candidates:
             shifted_pitches = [p + shift for p in raw_pitches]
             coverage = self._calculate_vocab_coverage(shifted_pitches)
 
-            # 逻辑: 优先选覆盖率高的; 如果覆盖率相同，选 shift 绝对值小的 (改动最少的)
+            # Logic: Prioritize high coverage; if coverage is the same, choose the smaller absolute shift value (minimum change)
             if coverage > max_coverage:
                 max_coverage = coverage
                 best_shift = shift
@@ -88,7 +88,7 @@ class MidiPreprocessor:
 
         if best_shift != 0:
             print(
-                f"   ℹ️ 智能八度修正: 偏移 {best_shift} 半音 (覆盖率: {max_coverage:.2%})"
+                f"    Smart Octave Correction: Offset {best_shift} semitones (Coverage: {max_coverage:.2%})"
             )
             return stream.transpose(best_shift), best_shift
 
@@ -96,20 +96,20 @@ class MidiPreprocessor:
 
     def process(self, midi_path):
         if not os.path.exists(midi_path):
-            raise FileNotFoundError(f"❌ MIDI文件未找到: {midi_path}")
+            raise FileNotFoundError(f"❌ MIDI file not found: {midi_path}")
 
         try:
             score = music21.converter.parse(midi_path)
         except Exception as e:
-            raise ValueError(f"Music21 解析失败: {e}")
+            raise ValueError(f"Music21 parsing failed: {e}")
 
         original_stream = self.get_melody_stream(score)
 
-        # --- 1. 调性分析与转调 (Smart Transpose) ---
+        # --- 1. Key Analysis and Smart Transpose ---
         try:
             key = original_stream.analyze("key")
         except:
-            # 极短序列可能无法分析调性，默认为 C Major
+            # Very short sequences might fail key analysis, default to C Major
             key = music21.key.Key("C")
 
         if key.mode in ["minor", "dorian", "phrygian", "locrian"]:
@@ -121,24 +121,24 @@ class MidiPreprocessor:
         interval = music21.interval.Interval(key.tonic, target_key.tonic)
         transposed_stream = original_stream.transpose(interval)
 
-        # 记录第一步转调的偏移
+        # Record the offset of the first step of transposition
         recover_semitones_key = -interval.semitones
 
-        # --- 2. 智能八度归一化 (Vocab Coverage Maximization) ---
+        # --- 2. Smart Octave Normalization (Vocab Coverage Maximization) ---
         final_stream, octave_shift_semitones = self._smart_octave_shift(
             transposed_stream
         )
 
-        # 总还原量 = -(转调偏移 + 八度偏移)
+        # Total restoration amount = -(Transposition offset + Octave offset)
         total_recover_semitones = recover_semitones_key - octave_shift_semitones
 
-        # --- 3. 采样与 Token 化 ---
+        # --- 3. Sampling and Tokenization ---
         melody_tokens_flat, _ = sample_stream(final_stream)
 
         if not melody_tokens_flat:
-            raise ValueError("❌ 预处理后未获得有效 Token (文件可能过短或为空)")
+            raise ValueError("No valid Tokens obtained after preprocessing (file might be too short or empty)")
 
-        # 重组为小节结构
+        # Reorganize into measure structure
         measure_tokens = []
         current_bar = []
         for token in melody_tokens_flat:
@@ -149,15 +149,15 @@ class MidiPreprocessor:
             else:
                 current_bar.append(token)
 
-        # [Robustness] 处理末尾残余或单小节情况
+        # [Robustness] Handle remaining tail or single measure cases
         if current_bar:
             measure_tokens.append(current_bar)
 
-        # [Robustness] 极短序列保护: 如果没有 BAR token，上面循环后 measure_tokens 可能为空
-        # 但 sample_stream 应该处理了基础 token。如果 flat 只有音符没有 bar，会被 current_bar 捕获。
-        # 这里做最后的非空检查
+        # [Robustness] Protection for extremely short sequences: If no BAR token exists, measure_tokens might be empty after the loop
+        # However, sample_stream should have handled basic tokens. If flat only has notes and no bar, it will be captured by current_bar.
+        # Final non-empty check here
         if not measure_tokens:
-            raise ValueError("❌ 无法切分小节，数据结构异常")
+            raise ValueError("Unable to split measures, data structure anomaly")
 
         return measure_tokens, total_recover_semitones
 
@@ -201,7 +201,7 @@ class ChordPredictor:
             suffix = chord_token[len(root_str) :]
 
             n = music21.note.Note(root_str)
-            # 这里 semitones 可能是 float，强转 int
+            # semitones might be float, force cast to int
             transposed_n = n.transpose(int(semitones))
             new_root = transposed_n.name.replace("-", "b")
 
@@ -210,67 +210,67 @@ class ChordPredictor:
             return chord_token
 
     def run(self, midi_path):
-        # 在 run() 方法开头
-        print(f"🔧 [Config] Window Size: {self.window_size} | Device: {self.composer.device}")
+        # At the beginning of run()
+        print(f"[Config] Window Size: {self.window_size} | Device: {self.composer.device}")
         
-        # 1. 预处理
+        # 1. Preprocessing
         try:
             measure_structs, recover_semitones = self.preprocessor.process(midi_path)
         except Exception as e:
-            print(f"⚠️ 预处理失败: {e}")
+            print(f"Preprocessing failed: {e}")
             return []
 
         num_measures = len(measure_structs)
 
-        # 2. 计算位置 (Smart Position)
-        # 针对极短序列 (<1 小节)，utils 需要能处理
+        # 2. Position Calculation (Smart Position)
+        # utils needs to be able to handle extremely short sequences (<1 measure)
         measure_positions = utils.generate_smart_position_indices(measure_structs)
 
         final_chords_per_measure = [None] * num_measures
 
         print(
-            f"🤖 [Predictor] 处理: {os.path.basename(midi_path)} | 小节数: {num_measures}"
+            f"[Predictor] Processing: {os.path.basename(midi_path)} | Measures: {num_measures}"
         )
 
-        # === 3. 动态滑窗逻辑 (Robust for Short Sequences) ===
+        # === 3. Dynamic Sliding Window Logic (Robust for Short Sequences) ===
 
-        # 如果总长度小于窗口，直接作为单个 batch 预测
+        # If total length is less than window size, predict as a single batch directly
         if num_measures <= self.window_size:
             input_seq, pos_seq = self._prepare_window_input(
                 measure_structs, measure_positions
             )
-            raw_output = self.composer.predict(input_seq, pos_seq)
+            raw_output, _ = self.composer.predict(input_seq, pos_seq)
 
-            # EOS 处理
+            # EOS Processing
             if config.EOS_TOKEN in raw_output:
                 eos_idx = raw_output.index(config.EOS_TOKEN)
                 raw_output[eos_idx:] = ["0"] * (len(raw_output) - eos_idx)
 
-            # 分配回小节 (Robust Slicing)
+            # Assign back to measures (Robust Slicing)
             ptr = 0
             for i in range(num_measures):
-                # 理论长度 = 音符数 + 1 (BAR)
+                # Theoretical length = number of notes + 1 (BAR)
                 length = len(measure_structs[i]) + 1
                 seg = raw_output[ptr : ptr + length]
-                # 补全防止越界
+                # Pad to prevent out-of-bounds
                 if len(seg) < length:
                     seg = seg + ["0"] * (length - len(seg))
                 final_chords_per_measure[i] = seg
                 ptr += length
 
         else:
-            # 标准滑窗 (保持原逻辑)
+            # Standard sliding window (Keep original logic)
             step = 1
             for i in range(0, num_measures, step):
                 end_idx = min(i + self.window_size, num_measures)
-                # 只有当剩余长度足够才有意义，或者到了最后一段
+                # Only meaningful if remaining length is sufficient, or at the final segment
                 current_window_measures = measure_structs[i:end_idx]
                 current_window_positions = measure_positions[i:end_idx]
 
                 input_seq, pos_seq = self._prepare_window_input(
                     current_window_measures, current_window_positions
                 )
-                raw_output = self.composer.predict(input_seq, pos_seq)
+                raw_output, _ = self.composer.predict(input_seq, pos_seq)
 
                 if config.EOS_TOKEN in raw_output:
                     eos_idx = raw_output.index(config.EOS_TOKEN)
@@ -288,11 +288,11 @@ class ChordPredictor:
                         final_chords_per_measure[global_idx] = seg
                     ptr += length
 
-        # === 4. 拼接与还原 ===
+        # === 4. Concatenation and Restoration ===
         final_result_flat = []
         for chords in final_chords_per_measure:
             if chords is None:
-                # 兜底：如果某小节未被预测到（极少见），填空
+                # Fallback: if a measure was not predicted (extremely rare), fill empty
                 final_result_flat.append("N.C.")
                 continue
 
@@ -305,7 +305,7 @@ class ChordPredictor:
 
 
 if __name__ == "__main__":
-    # 简单的自我测试
+    # Simple self-test
     p = ChordPredictor()
-    # 模拟一个极短的文件路径，实际运行需存在文件
-    print("✅ Predictor initialized. Ready for robustness test.")
+    # Simulate an extremely short file path; actual run requires file to exist
+    print("Predictor initialized. Ready for robustness test.")

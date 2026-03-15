@@ -2,67 +2,61 @@ import music21
 import os
 import glob
 from tqdm import tqdm
-import math
-import numpy as np
 from collections import Counter
 
 # ===========================
-# 1. 基础配置与参数
+# 1. Basic configuration and parameters
 # ===========================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 INTERIM_DIR = os.path.join(BASE_DIR, "data", "interim")
 OUTPUT_FILE = os.path.join(INTERIM_DIR, "training_data_aligned.txt")
 
-# 特殊 Token
+# Special Token
 BAR_TOKEN = "<BAR>"
 REST_TOKEN = "0"
 HOLD_TOKEN = "_"
 
-# 归一化参数 (用户指定)
-TARGET_CENTROID = 63     # 目标重心 (55+86)/2
-RANGE_TOLERANCE = 1      # 允许误差 (半音)
-HARD_MIN_PITCH = 41        # 严格下限 (G2)
-HARD_MAX_PITCH = 86        # 严格上限 (C#7)
+# Normalization parameter (user-specified)
+TARGET_CENTROID = 63     # Target focus (55+86)/2
+RANGE_TOLERANCE = 1      # Tolerance (semitone)
+HARD_MIN_PITCH = 41        # Strict lower limit (G2)
+HARD_MAX_PITCH = 86        # Strict upper limit (C#7)
 
 os.makedirs(INTERIM_DIR, exist_ok=True)
 
 # ===========================
-# 2. 核心逻辑函数
+# 2. Core logic function
 # ===========================
 
 def get_melody_pitches(stream_obj):
     """
-    严谨提取旋律音高：
-    1. 如果有多声部，只取 Part 0 (主旋律)。
-    2. 仅提取 Note 和 Chord 的最高音(双音情况)。
-    3. 排除伴奏符号 (Harmony) 和打击乐。
+    Strictly extract melody pitches:
+    1. If there are multiple parts, only extract Part 0 (the main melody).
+    2. Extract only the highest notes of the Note and Chord (in the case of double stops).
+    3. Exclude accompaniment markings (Harmony) and percussion.
     """
-    # 1. 声部隔离 (Isolate Melody Part)
+    # 1. Isolate Melody Part
     if stream_obj.hasPartLikeStreams():
-        # 通常 Part 0 是高音/主旋律，Part 1 是低音/伴奏
         melody_stream = stream_obj.parts[0]
     else:
         melody_stream = stream_obj
 
     pitches = []
-    # 2. 扁平化提取 (只针对旋律层)
-    # recurse() 比 flatten() 更稳健，排除 Metadata
+    # 2. Flattening extraction (only for melody layers)
+    # `recurse()` is more robust than `flatten()`, excluding metadata.
     for el in melody_stream.recurse().notes:
         if isinstance(el, music21.note.Note):
             pitches.append(el.pitch.midi)
         elif isinstance(el, music21.chord.Chord):
-            # 对于旋律中的双音/和弦，取最高音作为旋律轮廓
+            # For double notes/chords in a melody, take the highest note as the melody outline.
             pitches.append(el.pitches[-1].midi)
             
     return pitches
 
 def analyze_and_transpose(score, song_id="Unknown"):
-    """
-    处理管线：提取旋律指纹 -> 调性归一 -> 完整性校验 -> 重心归一(70.5) -> 边界校验
-    """
     try:
-        # --- 步骤 1: 提取原始旋律指纹 ---
+        # --- Step 1: Extract the original melody fingerprint ---
         raw_pitches = get_melody_pitches(score)
         
         if not raw_pitches:
@@ -72,8 +66,8 @@ def analyze_and_transpose(score, song_id="Unknown"):
         raw_max = max(raw_pitches)
         raw_range = raw_max - raw_min 
 
-        # --- 步骤 2: 调性归一化 (Key Norm) ---
-        # 注意：analyze('key') 会分析所有声部，这是正确的，因为调性是全局的
+        # --- Step 2: Key Norm Normalization ---
+        # Note: analyze('key') will analyze all voices, which is correct because tonality is global.
         key = score.analyze("key")
         
         if key.mode in ['minor', 'dorian', 'phrygian', 'locrian']:
@@ -84,11 +78,11 @@ def analyze_and_transpose(score, song_id="Unknown"):
         target_key = music21.key.Key(target_tonic_name)
         interval = music21.interval.Interval(key.tonic, target_key.tonic)
         
-        # 整首曲子转调
+        # The whole piece modulates
         transposed_score = score.transpose(interval)
 
-        # --- 步骤 3: 完整性严厉检测 (Integrity Check) ---
-        # 再次提取旋律指纹 (注意：必须重新用 get_melody_pitches 提取)
+        # --- Step 3: Integrity Check ---
+        # Extract the melody fingerprint again (Note: You must extract it again using get_melody_pitches)
         trans_pitches = get_melody_pitches(transposed_score)
         
         if not trans_pitches: 
@@ -98,19 +92,19 @@ def analyze_and_transpose(score, song_id="Unknown"):
         trans_max = max(trans_pitches)
         trans_range = trans_max - trans_min
 
-        # 校验：只允许 1.5 半音的误差
+        # Verification: Only a 1.5 semitone error is allowed.
         diff = abs(raw_range - trans_range)
         if diff > RANGE_TOLERANCE:
             return None, f"Range Integrity Fail (Diff: {diff:.2f})"
 
-        # --- 步骤 4: 基于旋律重心的八度归一化 (Centroid Norm) ---
-        # 使用旋律的中值，而不是整个 Score 的中值
+        # --- Step 4: Octave Normalization Based on Melodic Center ---
+        # Use the melody's median, not the median of the entire score.
         current_centroid = (trans_max + trans_min) / 2.0
         
-        # 计算距离目标 (70.5) 的差值
+        # Calculate the difference between the distance to the target (70.5).
         dist_to_target = TARGET_CENTROID - current_centroid
         
-        # 四舍五入到最近的八度
+        # Round to the nearest octave.
         octaves_to_shift = round(dist_to_target / 12.0)
         shift_amount = int(octaves_to_shift * 12)
 
@@ -119,12 +113,12 @@ def analyze_and_transpose(score, song_id="Unknown"):
         else:
             final_score = transposed_score
 
-        # --- 步骤 5: 最终边界检查 ---
+        # --- Step 5: Final Boundary Check ---
         final_pitches = get_melody_pitches(final_score)
         f_min = min(final_pitches)
         f_max = max(final_pitches)
         
-        # 你的严格边界: 44-97
+        # Strict boundaries: 44-97
         if f_min < HARD_MIN_PITCH or f_max > HARD_MAX_PITCH:
             return None, f"Bounds Violation ({f_min}-{f_max})"
 
@@ -135,18 +129,18 @@ def analyze_and_transpose(score, song_id="Unknown"):
 
 def sample_stream(score, step_size=0.25):
     """
-    [V5.0 修正版] 双轨采样：Melody + Chord
-    修复：返回两个列表以匹配 m, c = sample_stream(...)
+    [V5.0 Revised Version] Dual-track sampling: Melody + Chord
+    Fixed: Returns two lists to match m, c = sample_stream(...)
     """
     melody_tokens = []
     chord_tokens = []
     
-    # 1. 结构清洗
+    # 1. Structural cleaning
     try:
-        # 消除 Part/Voice 层级，强制暴露 Measure
+        # Eliminate the Part/Voice hierarchy and force exposure of Measure.
         parts = music21.instrument.partitionByInstrument(score)
         if parts:
-            # 如果有多乐器，通常取第一个作为主旋律及其和弦
+            # If there are multiple instruments, the first one is usually chosen as the main melody and its chords.
             score_to_process = parts.parts[0]
         else:
             score_to_process = score
@@ -154,13 +148,13 @@ def sample_stream(score, step_size=0.25):
         score_to_process = score_to_process.makeMeasures()
         measures = list(score_to_process.recurse().getElementsByClass(music21.stream.Measure))
     except Exception as e:
-        # 结构极度混乱，无法提取小节
+        # The structure is extremely chaotic, making it impossible to extract subsections.
         return [], []
 
     if not measures:
         return [], []
 
-    # 记录上一个时刻的和弦，用于填充 "_"
+    # Record the chord from the previous moment to fill in the underscores.
     last_chord = "N.C." 
 
     for m in measures:
@@ -168,34 +162,34 @@ def sample_stream(score, step_size=0.25):
         steps = int(round(m_len / step_size))
         if steps <= 0: continue
         
-        # === 关键：分别获取小节内的 Note 和 ChordSymbol ===
-        # 使用 flat 获取该小节内所有元素，按 offset 排序
+        # === Key: Retrieve Notes and ChordSymbols within a section ===
+        # Use `flat` to retrieve all elements within the section, sorted by offset.
         m_flat = m.flat
         
-        # 预抓取该小节所有和弦符号
-        # ABC 文件中和弦通常是 Harmony 对象
+        # Prefetch all chord symbols for this section
+        # Chords in ABC files are typically Harmony objects
         chord_objs = list(m_flat.getElementsByClass(music21.harmony.ChordSymbol))
         
         for i in range(steps):
             offset = i * step_size
-            current_abs_offset = m.offset + offset # 绝对时间（备用）
+            current_abs_offset = m.offset + offset # Absolute Time (Backup)
             
             # --- Track 1: Melody ---
             melody_token = "0" # Default: Rest
             
-            # 获取当前时间点的音符
+            # Get the note at the current time point
             elements = m_flat.getElementsByOffset(offset, mustBeginInSpan=False)
             
             # A. Attack Detection
             attack_found = False
             for el in elements:
-                if abs(el.offset - offset) < 0.01: # 刚好在这里开始
+                if abs(el.offset - offset) < 0.01:
                     if isinstance(el, music21.note.Note):
                         melody_token = str(el.pitch.midi)
                         attack_found = True
                         break
                     elif isinstance(el, music21.chord.Chord):
-                        # 取最高音
+                        # Take the highest note
                         melody_token = str(el.sortAscending().notes[-1].pitch.midi)
                         attack_found = True
                         break
@@ -204,7 +198,7 @@ def sample_stream(score, step_size=0.25):
             if not attack_found:
                 for el in elements:
                     if isinstance(el, (music21.note.Note, music21.chord.Chord)):
-                        # 如果当前点在音符持续范围内 (start < now < end)
+                        # If the current point is within the duration of the note (start < now < end)
                         if el.offset < offset < (el.offset + el.duration.quarterLength):
                             melody_token = "_"
                             break
@@ -212,15 +206,13 @@ def sample_stream(score, step_size=0.25):
             melody_tokens.append(melody_token)
 
             # --- Track 2: Chord ---
-            # 逻辑：查找当前 offset 及其之前最近的一个和弦符号
-            # ABC 的和弦通常只在变化时标记，所以需要保持状态
+            # Logic: Find the current offset and the nearest chord symbol before it.
+            # ABC chords are usually only marked when they change, so it's necessary to keep the state consistent.
             
             found_new_chord = False
-            # 在当前极短的时间窗内是否有新和弦开始？
+            # Is a new chord beginning within this very short time window?
             for ch in chord_objs:
                 if abs(ch.offset - offset) < 0.01:
-                    # 简化和弦名称：把 "Am7" 变成 "Am" 或保留原样
-                    # 这里先用 figure (e.g., "C", "G7")
                     last_chord = ch.figure
                     found_new_chord = True
                     break
@@ -228,19 +220,19 @@ def sample_stream(score, step_size=0.25):
             if found_new_chord:
                 chord_tokens.append(last_chord)
             else:
-                chord_tokens.append("_") # 和弦延续
+                chord_tokens.append("_")
 
         # --- End of Measure ---
         melody_tokens.append("<BAR>")
-        chord_tokens.append("<BAR>") # 和弦序列也要对齐小节线
+        chord_tokens.append("<BAR>")
         
     return melody_tokens, chord_tokens
 
 def process_all_files():
     files = glob.glob(os.path.join(RAW_DIR, "*.abc"))
-    print(f"🚀 开始处理 {len(files)} 个文件...")
-    print(f"   - 目标重心 (Target Centroid): MIDI {TARGET_CENTROID}")
-    print(f"   - 严格边界 (Hard Bounds): {HARD_MIN_PITCH} ~ {HARD_MAX_PITCH}")
+    print(f"Start processing {len(files)} files...")
+    print(f"   - Target Centroid: MIDI {TARGET_CENTROID}")
+    print(f"   - Hard Bounds: {HARD_MIN_PITCH} ~ {HARD_MAX_PITCH}")
 
     stats = {
         "processed": 0,
@@ -257,7 +249,7 @@ def process_all_files():
 
                 stream_obj = music21.converter.parse(content, format="abc")
                 
-                # 处理单曲 vs 多曲
+                # Processing single tracks vs. multiple tracks
                 songs = []
                 if isinstance(stream_obj, music21.stream.Opus):
                     songs = list(stream_obj)
@@ -267,12 +259,12 @@ def process_all_files():
                 for i, song in enumerate(songs):
                     stats["processed"] += 1
                     
-                    # 1. 分析与转调
+                    # 1. Analysis and Transposition
                     final_score, message = analyze_and_transpose(song)
 
                     if final_score is None:
                         stats["dropped"] += 1
-                        # 记录错误原因关键词
+                        # Record error reason keywords
                         if "Bounds" in message: reason = "Bounds Violation"
                         elif "Range" in message: reason = "Range Integrity Fail"
                         elif "Empty" in message: reason = "Empty Score"
@@ -280,7 +272,7 @@ def process_all_files():
                         drop_reasons[reason] += 1
                         continue
 
-                    # 2. 采样序列化
+                    # 2. Sample serialization
                     try:
                         m, c = sample_stream(final_score)
                         
@@ -300,19 +292,19 @@ def process_all_files():
                 print(f"Error reading {file_path}: {e}")
                 continue
 
-    # === 最终统计 ===
+    # === Final statistics ===
     print("\n" + "="*40)
-    print(f"📊 最终处理报告")
+    print(f"Final processing report")
     print("="*40)
-    print(f"总处理曲目: {stats['processed']}")
-    print(f"✅ 成功输出:   {stats['valid']} ({(stats['valid']/max(1, stats['processed']))*100:.1f}%)")
-    print(f"❌ 剔除数量:   {stats['dropped']}")
+    print(f"Total processed tracks: {stats['processed']}")
+    print(f"Successfully output:   {stats['valid']} ({(stats['valid']/max(1, stats['processed']))*100:.1f}%)")
+    print(f"Number of items to be removed:   {stats['dropped']}")
     print("-" * 40)
-    print("📉 剔除原因分布:")
+    print("Distribution of reasons for exclusion:")
     for reason, count in drop_reasons.most_common():
         print(f"   - {reason}: {count}")
     print("="*40)
-    print(f"结果已保存至: {OUTPUT_FILE}")
+    print(f"The results have been saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     process_all_files()

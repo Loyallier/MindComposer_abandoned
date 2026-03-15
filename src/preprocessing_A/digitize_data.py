@@ -5,7 +5,7 @@ from collections import Counter
 import re
 import statistics
 
-# ================= 1. 环境与导入 =================
+# ================= 1. Environment and Introduction =================
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(current_dir)
 project_root = os.path.dirname(src_dir)
@@ -15,17 +15,17 @@ try:
     from src import path
     from src.ChordGenerator_A import config
 except ImportError as e:
-    print(f"❌ 导入失败: {e}")
+    print(f"❌ Import failed: {e}")
     sys.exit(1)
 
-# ================= 2. 配置与阈值 =================
+# ================= 2. Configuration and threshold =================
 INPUT_FILE = os.path.join(path.DATA_INTERIM_DIR, "training_data_aligned.txt")
 OUTPUT_VOCAB = path.VOCAB_PATH
 OUTPUT_DATA = path.DATASET_PATH
 
 SUSPICION_THRESHOLD = 100
 
-# 🌟 罚分权重表
+# Penalty weighting table
 PENALTY_SCORES = {
     "LowNote": 10,
     "HighNote": 10,
@@ -43,12 +43,11 @@ RESERVED_TOKENS = [
     config.PAD_TOKEN, config.SOS_TOKEN, config.EOS_TOKEN, "_", config.BAR_TOKEN, "0",
 ]
 
-# ================= 3. 辅助功能 =================
+# ================= 3. Accessibility =================
 
 def transpose_melody_seq(seq, semitones):
     new_seq = []
     for token in seq:
-        # 🌟 修正：排除 "0" (休止符)
         if token.isdigit() and token != "0":
             try:
                 val = int(token)
@@ -60,17 +59,16 @@ def transpose_melody_seq(seq, semitones):
     return new_seq
 
 def get_melody_range(seq):
-    """计算旋律音域 (Max - Min), 忽略休止符 '0'"""
+    """Calculate the melodic range (Max - Min), ignoring rests '0'"""
     notes = []
     for token in seq:
-        # 🌟 修正：排除 "0"
         if token.isdigit() and token != "0":
             notes.append(int(token))
     if not notes:
         return 0
     return max(notes) - min(notes)
 
-# ================= 4. 异常检测器 =================
+# ================= 4. Anomaly Detector =================
 
 class SuspicionDetector:
     def __init__(self):
@@ -86,7 +84,6 @@ class SuspicionDetector:
         total_notes = 0
         chromatic_notes = 0
         
-        # --- A. 结构一致性检测 ---
         bar_indices = [i for i, x in enumerate(melody_seq) if x == config.BAR_TOKEN]
         if len(bar_indices) > 1:
             segment_lengths = []
@@ -104,9 +101,7 @@ class SuspicionDetector:
                 score += PENALTY_SCORES["BadRhythm_Soft"]
                 reasons.append(f"InconsistentBar(Soft, lens={unique_lengths})")
 
-        # --- B. 检查旋律 ---
         for token in melody_seq:
-            # 🌟 修正：严格排除 "0"
             if token.isdigit() and token != "0":
                 val = int(token)
                 total_notes += 1
@@ -131,7 +126,6 @@ class SuspicionDetector:
                 score += PENALTY_SCORES["Chromatic"]
                 reasons.append(f"Chromatic({chromatic_ratio:.1%})")
 
-        # --- C. 检查和弦 ---
         current_bar_chords = []
         for token in harmony_seq:
             if token == config.BAR_TOKEN:
@@ -154,7 +148,7 @@ class SuspicionDetector:
         return score, reasons
 
 
-# ================= 5. 和弦标准化 (不变) =================
+# ================= 5. Chord normalization =================
 def normalize_chord(token):
     if token in RESERVED_TOKENS or token == "0" or token == "_":
         return token
@@ -226,16 +220,16 @@ def encode_sequence(seq, vocab, is_harmony=False):
     return encoded
 
 
-# ================= 6. 主程序 =================
+# ================= 6. Main program =================
 
 def main():
     if not os.path.exists(path.DATA_PROCESSED_DIR):
         os.makedirs(path.DATA_PROCESSED_DIR)
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ 找不到输入文件: {INPUT_FILE}")
+        print(f"❌ Input file not found: {INPUT_FILE}")
         return
 
-    print("🕵️‍♂️ 启动增强版异常检测 (V6 - Fix Rest '0' Bug)...")
+    print(" Start Enhanced Anomaly Detection (V6 - Fix Rest '0' Bug)...")
     
     detector = SuspicionDetector()
     valid_melody = []
@@ -255,16 +249,15 @@ def main():
 
             total_lines += 1
 
-            # --- 第一轮检测 ---
+            # --- First round of testing ---
             score, reasons = detector.check(m_seq, h_seq)
 
-            # --- 统计 LowNote 歌曲的音域 (无论死活) ---
             has_lownote = any("LowNote" in r for r in reasons)
             if has_lownote:
                 pitch_range = get_melody_range(m_seq)
                 detector.lownote_ranges.append(pitch_range)
 
-            # --- 救援尝试 ---
+            # --- rescue attempt ---
             if has_lownote:
                 m_seq_rescued = transpose_melody_seq(m_seq, 12)
                 score_new, reasons_new = detector.check(m_seq_rescued, h_seq)
@@ -274,7 +267,7 @@ def main():
                     reasons = reasons_new
                     detector.rescued_count += 1
 
-            # --- 最终判决 ---
+            # --- Final judgment ---
             if score >= SUSPICION_THRESHOLD:
                 detector.dropped_count += 1
                 cleaned_reasons = [r.split("(")[0] for r in reasons]
@@ -284,40 +277,40 @@ def main():
             valid_melody.append(m_seq)
             valid_harmony.append(h_seq)
 
-    print(f"\n📊 检测报告:")
-    print(f"   - 原始: {total_lines}")
-    print(f"   - 有效: {len(valid_melody)}")
-    print(f"   - 剔除: {detector.dropped_count} (剔除率: {detector.dropped_count / total_lines:.1%})")
-    print(f"   - 🚑 成功救援: {detector.rescued_count} 例")
+    print(f"\n Test report:")
+    print(f"   - original: {total_lines}")
+    print(f"   - efficient: {len(valid_melody)}")
+    print(f"   - Eliminate: {detector.dropped_count} (Rejection rate: {detector.dropped_count / total_lines:.1%})")
+    print(f"   - 🚑 Successful rescues: {detector.rescued_count} Example:")
 
-    # 🌟 专项分析：LowNote
-    print(f"\n📉 LowNote 专项尸检 (已排除休止符 '0'):")
+    # Specialized Analysis: LowNote
+    print(f"\n LowNote Special Autopsy (with '0' excluded):")
     if detector.lownote_ranges:
         avg_range = statistics.mean(detector.lownote_ranges)
         max_range = max(detector.lownote_ranges)
         min_range = min(detector.lownote_ranges)
-        print(f"   - 触发 LowNote 的歌曲数量: {len(detector.lownote_ranges)}")
-        print(f"   - 平均音域 (Range): {avg_range:.2f} 半音 (约 {avg_range/12:.1f} 个八度)")
-        print(f"   - 最大音域: {max_range} 半音")
-        print(f"   - 最小音域: {min_range} 半音")
+        print(f"   - Number of songs that trigger LowNote: {len(detector.lownote_ranges)}")
+        print(f"   - Average range: {avg_range:.2f} semitones (approximately {avg_range/12:.1f} octaves)")
+        print(f"   - Maximum range: {max_range} semitones")
+        print(f"   - Min Range: {min_range} semitones")
     else:
-        print(f"   - ✅ 无 LowNote 样本 (太棒了!)")
+        print(f"   - ✅ No LowNote samples (Great!)")
 
-    print(f"\n💀 详细死因统计 (剔除样本中出现的错误):")
+    print(f"\n Detailed statistics on causes of death (excluding errors in the sample):")
     sorted_reasons = sorted(detector.reasons.items(), key=lambda x: x[1], reverse=True)
     for r, c in sorted_reasons:
-        print(f"   ❌ {r}: {c} 次")
+        print(f"   ❌ {r}: {c} times")
 
-    # 构建词表
+    # Building a vocabulary
     melody_vocab = build_vocab(valid_melody, "Melody", min_freq=1)
     harmony_vocab = build_vocab(valid_harmony, "Harmony", min_freq=20, is_harmony=True)
 
     full_vocab = {"melody": melody_vocab, "harmony": harmony_vocab}
     with open(OUTPUT_VOCAB, "w", encoding="utf-8") as f:
         json.dump(full_vocab, f, indent=4)
-    print(f"\n💾 词表已保存 (Melody: {len(melody_vocab)}, Harmony: {len(harmony_vocab)})")
+    print(f"\n The vocabulary list has been saved. (Melody: {len(melody_vocab)}, Harmony: {len(harmony_vocab)})")
 
-    # 编码
+    # coding
     encoded_data = []
     for idx, (m, h) in enumerate(zip(valid_melody, valid_harmony)):
         encoded_data.append(
@@ -331,7 +324,7 @@ def main():
 
     with open(OUTPUT_DATA, "w", encoding="utf-8") as f:
         json.dump(encoded_data, f)
-    print("🎉 处理完成！")
+    print(" Processing complete!")
 
 if __name__ == "__main__":
     main()

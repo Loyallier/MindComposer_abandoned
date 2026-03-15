@@ -2,7 +2,7 @@
 # import os
 # import torch
 
-# # 👇 引入 config (统一常量)
+# # 👇 Import config (Unified constants)
 # try:
 #     from src.ChordGenerator_A import config
 # except ImportError:
@@ -13,31 +13,31 @@ import os
 import torch
 from collections import Counter
 
-# ✅ 统一引用：从 src 开始
+# Unified reference: Start from src
 from src import path
 from src.ChordGenerator_A import config
 
-# ================= 通用工具函数 =================
+# ================= General Utility Functions =================
 
 def load_vocab(vocab_path):
     """
-    加载字典的通用函数
-    ✅ 必须返回字典内容，绝对不能 pass！
+    General function to load the dictionary.
+    Must return dictionary content; never just 'pass'!
     """
     if not os.path.exists(vocab_path):
-        raise FileNotFoundError(f"❌ 找不到字典文件: {vocab_path} (请检查 config.py 里的路径)")
+        raise FileNotFoundError(f"Vocabulary file not found: {vocab_path} (Please check the path in config.py)")
     
     with open(vocab_path, 'r', encoding='utf-8') as f:
         vocab = json.load(f)
     
-    # 👇 关键！必须把读到的东西返回出去
+    # Critical! Must return the loaded content
     return vocab
 
 def clean_melody_token(token):
-    """清洗旋律 Token"""
+    """Clean melody Token"""
     token = str(token).strip()
     
-    # 使用 config 里的定义
+    # Use definitions from config
     if token in ["_", "0", config.PAD_TOKEN, config.SOS_TOKEN, config.EOS_TOKEN, config.BAR_TOKEN]: 
         return token
     
@@ -47,7 +47,7 @@ def clean_melody_token(token):
     return config.UNK_TOKEN
 
 def token_to_tensor(token_list, vocab_stoi, device):
-    """字符转 Tensor"""
+    """Convert characters to Tensor"""
     sos_id = vocab_stoi.get(config.SOS_TOKEN)
     eos_id = vocab_stoi.get(config.EOS_TOKEN)
     unk_id = vocab_stoi.get(config.UNK_TOKEN, 3)
@@ -113,40 +113,40 @@ def token_to_tensor_v3(token_list, vocab_stoi, device):
     
     return src_tensor, pos_tensor, length
 
-# ... (保留原有的 load_vocab, clean_melody_token 等函数) ...
+# ... (Retain original functions like load_vocab, clean_melody_token, etc.) ...
 
 def get_dominant_bar_length(measure_tokens_list):
-    """统计众数长度 (复用自 tokenize_data.py)"""
+    """Count dominant length (Reused from tokenize_data.py)"""
     if not measure_tokens_list: return 16
     lengths = [len(b) for b in measure_tokens_list]
     counts = Counter(lengths)
-    # 返回出现次数最多的长度
+    # Return the most frequent length
     return counts.most_common(1)[0][0]
 
 def generate_smart_position_indices(measure_tokens_list):
     """
-    [V3.1 核心逻辑复用]
-    为整首曲子生成绝对位置索引 (List of Lists)。
-    包含: 弱起右对齐 + 标准左对齐 + BAR位置处理
+    [V3.1 Core Logic Reuse]
+    Generates absolute position indices for the entire piece (List of Lists).
+    Includes: Pickup (anacrusis) right-alignment + standard left-alignment + BAR position handling.
     """
     dominant_len = get_dominant_bar_length(measure_tokens_list)
     all_pos_indices = []
     
     max_beat = config.POS_VOCAB_SIZE - 3 # 30
-    bar_pos_idx = config.POS_VOCAB_SIZE - 2 # 31 (用于 BAR)
+    bar_pos_idx = config.POS_VOCAB_SIZE - 2 # 31 (for BAR)
 
     for i, bar_tokens in enumerate(measure_tokens_list):
         bar_len = len(bar_tokens)
         current_bar_pos = []
         
-        # --- 弱起处理 (Pickup Logic) ---
-        # 逻辑：第一小节 & 短于众数 & 短于10
+        # --- Pickup Handling (Pickup Logic) ---
+        # Logic: First measure & shorter than dominant length & shorter than 10
         if i == 0 and bar_len < dominant_len and bar_len < 10:
             start_idx = max(0, dominant_len - bar_len)
-            # 生成: [14, 15]
+            # Generate: [14, 15]
             current_bar_pos = [min(start_idx + k, max_beat) for k in range(bar_len)]
         else:
-            # 标准左对齐: [0, 1, 2...]
+            # Standard left-alignment: [0, 1, 2...]
             current_bar_pos = [min(k, max_beat) for k in range(bar_len)]
             
         all_pos_indices.append(current_bar_pos)
@@ -155,7 +155,7 @@ def generate_smart_position_indices(measure_tokens_list):
 
 def token_to_tensor_v3_with_pos(token_list, pos_list, vocab_stoi, device):
     """
-    [V3.1 Inference] 接收外部计算好的 token 和 pos，转为 Tensor
+    [V3.1 Inference] Receives pre-calculated tokens and positions, converts to Tensor
     """
     clean_seq = [clean_melody_token(t) for t in token_list]
     
@@ -168,14 +168,15 @@ def token_to_tensor_v3_with_pos(token_list, pos_list, vocab_stoi, device):
     ids = [sos_id] + [vocab_stoi.get(t, unk_id) for t in clean_seq] + [eos_id]
     
     # 2. Pos IDs: [31] + Body + [31]
-    # 注意：pos_list 必须已经包含了 <BAR> 对应的 31 (如果 token 里有 <BAR>)
-    # 但根据 predict_midi 的逻辑，我们传入的 pos_list 是纯数值，遇到 token=<BAR> 时我们需要手动补 31
+    # Note: pos_list must already include 31 corresponding to <BAR> (if <BAR> exists in tokens)
+    # However, based on predict_midi logic, the pos_list passed in is pure numerical; 
+    # we manually pad 31 when token=<BAR>
     
     final_pos = [bar_pos_idx] # SOS pos
     
-    # 这里需要非常小心地对齐
+    # Needs careful alignment
     # token_list: ['60', '62', '<BAR>']
-    # pos_list:   [0,    1,    31]  <-- 外部传入时要保证对齐
+    # pos_list:   [0,    1,    31]  <-- Ensure alignment when passing from external source
     final_pos.extend(pos_list)
     final_pos.append(bar_pos_idx) # EOS pos
     
@@ -187,15 +188,15 @@ def token_to_tensor_v3_with_pos(token_list, pos_list, vocab_stoi, device):
 
 def get_current_tf_ratio(epoch):
     """
-    [V3.4 Engineering] 计算当前 Epoch 的 Teacher Forcing Ratio
-    策略: 线性衰减 (Linear Decay)
+    [V3.4 Engineering] Calculate Teacher Forcing Ratio for the current Epoch
+    Strategy: Linear Decay
     """
-    # 如果还没到衰减结束轮次
+    # If the decay end epoch has not been reached
     if epoch < config.TF_DECAY_EPOCHS:
-        # 计算衰减步长
+        # Calculate decay step
         decay_step = (config.TF_START_RATIO - config.TF_END_RATIO) / config.TF_DECAY_EPOCHS
         current_ratio = config.TF_START_RATIO - (epoch * decay_step)
         return max(config.TF_END_RATIO, current_ratio)
     else:
-        # 超过衰减轮次，保持最低值
+        # After decay epochs, maintain the minimum value
         return config.TF_END_RATIO

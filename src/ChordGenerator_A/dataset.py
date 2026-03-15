@@ -3,25 +3,19 @@ import torch
 import random
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
-
-# ✅ 统一引用
-from src import path
-from src.ChordGenerator_A import config
-
-# ✅ 统一引用
 from src import path
 from src.ChordGenerator_A import config
 
 class MusicDataset(Dataset):
     def __init__(self, data_path, augment=False):
         """
-        [V3.3 更新] 新增 augment 参数
-        augment=True: 开启数据增强（加噪），用于训练集
-        augment=False: 保持原样，用于验证集
+        [V3.3 Update] Added augment parameter
+        augment=True: Enable data augmentation (noise injection) for training set
+        augment=False: Keep original data for validation set
         """
         with open(data_path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
-        self.augment = augment  # 保存标记
+        self.augment = augment 
 
     def __len__(self):
         return len(self.data)
@@ -29,32 +23,29 @@ class MusicDataset(Dataset):
     def __getitem__(self, idx):
         item = self.data[idx]
         
-        # 获取原始 list (注意：这是一个引用，修改它会影响内存中的数据)
+        # Get original list (Note: this is a reference, modifying it affects data in memory)
         src_list = item["input"]
         
-        # 🛡️ [V3.3 核心] 动态旋律加噪 (Input Noise)
-        # 仅在 augment=True 时触发
+        # [V3.3] Dynamic melody noise injection
+        # Only triggered when augment=True
         if self.augment:
-            # 必须 copy，否则会永久修改内存中的 dataset，导致下一轮 epoch 数据越来越乱
             src_list = src_list.copy() 
             
-            # 避开开头的 SOS 和结尾的 EOS
-            # 假设 list 结构是 [SOS, n1, n2, ..., EOS, 31]
-            # 我们只破坏中间的音符
+            # Avoid SOS at the beginning and EOS at the end
             seq_len = len(src_list)
             if seq_len > 2:
                 for i in range(1, seq_len - 1):
-                    # 跳过特殊符号 (如 BAR=config.BAR_TOKEN 或其 ID)
-                    # 这里 src_list 里存的是 ID 还是 Token? 
-                    # 根据 tokenize_data.py，json 里存的是 ID (int)
-                    # 假设 config.BAR_TOKEN 对应的 ID 不应该被 mask
-                    # 📉 [V3.5] 降低难度: 0.15 -> 0.10 (10% 噪声)
+                    # Skip special symbols (e.g., BAR=config.BAR_TOKEN or its ID)
+                    # Are IDs or Tokens stored in src_list?
+                    # According to tokenize_data.py, IDs (int) are stored in the json
+                    # Assuming the ID corresponding to config.BAR_TOKEN should not be masked
+                    # [V3.5] Reduce difficulty: 0.15 -> 0.10 (10% noise)
                     if random.random() < 0.10:
-                        # 将其替换为 "0" (UNK/PAD 的 ID，通常是 0)
-                        # 强迫模型去"猜"这个音
+                        # Replace with "0" (ID for UNK/PAD, usually 0)
+                        # Force the model to "guess" this note
                         src_list[i] = config.PAD_IDX
 
-        # 转为 Tensor
+        # Convert to Tensor
         src = torch.LongTensor(src_list)
         pos = torch.LongTensor(item["position"])
         trg = torch.LongTensor(item["target"])
@@ -64,39 +55,39 @@ class MusicDataset(Dataset):
     
 def collate_fn(batch):
     """
-    【关键函数】Batch Padding
+    [Key Function] Batch Padding
     """
-    # 1. 拆包 (新增 pos_batch)
+    # 1. Unpack (Added pos_batch)
     src_batch, pos_batch, trg_batch, lengths = zip(*batch)
 
-    # 2. 填充 (Padding)
-    # src 和 trg 用 0 (vocab里的 <PAD>)
+    # 2. Padding
+    # Use 0 (the <PAD> in vocab) for src and trg
     src_padded = pad_sequence(src_batch, batch_first=True, padding_value=config.PAD_IDX)
     trg_padded = pad_sequence(trg_batch, batch_first=True, padding_value=config.PAD_IDX)
     
-    # [V3.1 新增] pos 用 POS_PAD_IDX (32) 填充
-    # 因为 0 是有效的位置索引(第一拍)，不能用来做 Padding
+    # [V3.1 New] Use POS_PAD_IDX (32) for pos padding
+    # Because 0 is a valid position index (the first beat), it cannot be used for Padding
     pos_padded = pad_sequence(pos_batch, batch_first=True, padding_value=config.POS_PAD_IDX)
 
-    # 3. 转换为 Tensor
+    # 3. Convert to Tensor
     lengths = torch.LongTensor(lengths)
 
     return src_padded, pos_padded, trg_padded, lengths
 
 
-# --- 测试代码 ---
+# --- Test Code ---
 if __name__ == "__main__":
-    # 测试加载
+    # Test loading
     import os
     if os.path.exists(path.TRAIN_DATASET_PATH):
         dataset = MusicDataset(str(path.TRAIN_DATASET_PATH))
-        print(f"数据集大小: {len(dataset)}")
+        print(f"Dataset size: {len(dataset)}")
 
-        # 模拟取一个样本
+        # Simulate fetching a sample
         src, pos, trg, l = dataset[0]
         print(f"Sample 0:")
         print(f" - Src shape: {src.shape}")
         print(f" - Pos shape: {pos.shape} (Example: {pos[:10].tolist()})")
         print(f" - Trg shape: {trg.shape}")
     else:
-        print("⚠️ 未找到数据集文件，请先运行 tokenize_data.py")
+        print("Dataset file not found, please run tokenize_data.py first")

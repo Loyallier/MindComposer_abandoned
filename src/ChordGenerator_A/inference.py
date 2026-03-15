@@ -1,6 +1,7 @@
 import torch
 import os
 import sys
+import numpy as np
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
@@ -21,11 +22,11 @@ class AIComposer:
         self.melody_stoi = self.vocab["melody"]
         self.harmony_itos = {v: k for k, v in self.vocab["harmony"].items()}
 
-        # 模型初始化
+        # Model Initialization
         input_dim = len(self.melody_stoi)
         output_dim = len(self.vocab["harmony"])
 
-        # ✅ 必须传入 pos 参数
+        # Must pass pos parameters
         enc = Encoder(
             input_dim,
             config.ENC_EMB_DIM,
@@ -50,23 +51,25 @@ class AIComposer:
         """
         [V3.1 Update]
         :param melody_list: ['60', '62', '<BAR>']
-        :param pos_list:    [14,   15,    31] (外部计算好的绝对位置)
+        :param pos_list:    [14,   15,    31] (Pre-calculated absolute positions)
         """
         temperature = config.INFERENCE_TEMP
         top_k = config.INFERENCE_TOP_K
 
-        # 1. 转换 Tensor (使用外部传入的 Pos)
+        # 1. Convert to Tensor (Using externally passed Pos)
         src_tensor, pos_tensor, src_len = utils.token_to_tensor_v3_with_pos(
             melody_list, pos_list, self.melody_stoi, self.device
         )
 
         predicted_chords = []
 
-        # ✅ 获取 EOS 的整数 ID (用于 Logit 屏蔽)
+        # Get integer ID for EOS (Used for Logit masking)
         eos_id = self.vocab["harmony"].get(config.EOS_TOKEN)
 
+        # [New] Used to store attention weights for each step
+        attn_weights_list = []
         with torch.no_grad():
-            # A. Encoder (传入 pos_tensor)
+            # A. Encoder (Passing pos_tensor)
             encoder_outputs, hidden, cell = self.model.encoder(
                 src_tensor, pos_tensor, src_len
             )
@@ -80,23 +83,28 @@ class AIComposer:
             trg_token = torch.tensor([sos_id], device=self.device)
 
             for step, input_token_str in enumerate(melody_list):
-                output, hidden, cell = self.model.decoder(
+                # [Modify here] Receive attention_weights
+                output, hidden, cell, attn = self.model.decoder(
                     trg_token, hidden, cell, encoder_outputs
                 )
 
-                # 🛑 [关键修正] 必须保持 1:1 对齐
-                # 遇到 BAR，必须在输出里占位，不能只 continue
+                # [New 2] Convert the weight of this step to numpy and store it
+                # attn shape: [Batch=1, Src_Len]
+                attn_weights_list.append(attn.cpu().numpy())
+
+                # [Critical Fix] Must maintain 1:1 alignment
+                # When encountering BAR, it must take a placeholder in output, cannot just continue
                 if input_token_str == config.BAR_TOKEN:
                     bar_id = self.vocab["harmony"].get(config.BAR_TOKEN)
                     trg_token = torch.tensor([bar_id], device=self.device)
                     
-                    # ✅ 显式加入结果列表
+                    # Explicitly add to result list
                     predicted_chords.append(config.BAR_TOKEN)
                     continue
 
                 logits = output / temperature
-                # 🔥 [关键修改] 强制屏蔽 EOS 🔥
-                # 只要循环还没结束，就绝对不允许生成 EOS
+                # [Critical Modification] Force Mask EOS 
+                # As long as the loop hasn't ended, generating EOS is strictly forbidden
                 if eos_id is not None:
                     logits[:, eos_id] = -float("inf")
 
@@ -108,13 +116,15 @@ class AIComposer:
                 chord_str = self.harmony_itos.get(top1.item(), config.UNK_TOKEN)
                 predicted_chords.append(chord_str)
                 trg_token = top1
-
-        return predicted_chords
+        # [New 3] Concatenate matrices
+        # Final shape: [Target_Len, Source_Len]
+        attention_matrix = np.concatenate(attn_weights_list, axis=0)
+        return predicted_chords, attention_matrix
 
 
 if __name__ == "__main__":
     composer = AIComposer()
     test_melody = ["60", "_", "_", "_", config.BAR_TOKEN, "62", "_", "_", "_"]
-    print(f"\n🎵 Input: {test_melody}")
+    print(f"\nInput: {test_melody}")
     result = composer.predict(test_melody)
-    print(f"🎹 Output: {result}")
+    print(f"Output: {result}")
