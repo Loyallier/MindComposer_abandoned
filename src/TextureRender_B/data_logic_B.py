@@ -2,33 +2,33 @@ from typing import List, Dict, Tuple, Any
 import music21 as m21
 
 # Group B phase 1: logic)
-# 包含：和弦结构、简化和弦解析、伴奏织体模板。
+# Includes: chord structure, simplified chord analysis, and accompaniment texture templates.
 
-# A. 和弦类型定义 (Chord Type Definitions)
-# 键名：简化和弦类型（例如：Maj, min7, Dom7）
-# 值：相对于根音（0）的半音音高偏移量（MIDI Offsets）
+# A. Chord Type Definitions
+# Key name: Simplified chord type (e.g., Maj, min7, Dom7)
+# Value: Semitone pitch offset relative to the root note (0) (MIDI Offsets)
 CHORD_TYPES: Dict[str, List[int]] = {
-    "Maj": [0, 4, 7],       # 大三和弦 (Root, M3, P5)
-    "min": [0, 3, 7],       # 小三和弦 (Root, m3, P5)
-    "Dom7": [0, 4, 7, 10],  # 属七和弦 (Root, M3, P5, m7)
-    "Maj7": [0, 4, 7, 11],  # 大七和弦 (Root, M3, P5, M7)
-    "min7": [0, 3, 7, 10],  # 小七和弦 (Root, m3, P5, m7)
-    "dim": [0, 3, 6],       # 减三和弦 (Root, m3, d5)
-    "sus4": [0, 5, 7],      # 挂四和弦 (Root, P4, P5)
-    "Maj6": [0, 4, 7, 9],   # 大六和弦 (Root, M3, P5, M6)
-    "min6": [0, 3, 7, 9],   # 小六和弦 (Root, m3, P5, M6)
-    "NoChord": [],          # 【新增】休止符号 '0' 对应的类型，不含任何音高偏移
+    "Maj": [0, 4, 7],       # Major triad (Root, M3, P5)
+    "min": [0, 3, 7],       # Small triad (Root, m3, P5)
+    "Dom7": [0, 4, 7, 10],  # Dominant seventh chord (Root, M3, P5, m7)
+    "Maj7": [0, 4, 7, 11],  # Major seventh chord (Root, M3, P5, M7)
+    "min7": [0, 3, 7, 10],  # Seventh Chord (Root, m3, P5, m7)
+    "dim": [0, 3, 6],       # Diminished triads (Root, m3, d5)
+    "sus4": [0, 5, 7],      # Hanging fourth chord (Root, P4, P5)
+    "Maj6": [0, 4, 7, 9],   # Major sixth chord (Root, M3, P5, M6)
+    "min6": [0, 3, 7, 9],   # Small Six Harmonics (Root, m3, P5, M6)
+    "NoChord": [],          # [New Feature] The type corresponding to the rest symbol '0' does not contain any pitch shift.
 }
 
-# B. 和弦解析函数 (Chord Parsing Function)
+# B. Chord Parsing Function
 def parse_simplified_chord(chord_label: str):
     if not chord_label or chord_label in ['0', '_', 'None', 'N.C.']:
         return 'C', 'NoChord'
     
-    # 1. 预处理 A 组可能的格式 (如 C:maj -> C)
+    # 1. Preprocess the possible formats of group A (e.g., C:maj -> C).
     clean_label = str(chord_label).split(':')[0].split('/')[0]
     
-    # 2. 提取根音 (处理 C# 或 Bb)
+    # 2. Extract the root note (processing in C# or Bb)
     if len(clean_label) >= 2 and clean_label[1] in ('#', 'b', '-'):
         root_name = clean_label[:2].replace('b', '-')
         suffix = clean_label[2:]
@@ -36,7 +36,7 @@ def parse_simplified_chord(chord_label: str):
         root_name = clean_label[0]
         suffix = clean_label[1:]
 
-    # 3. 增强后缀识别 (兼容 Am, C, G7)
+    # 3. Enhanced suffix recognition (compatible with Am, C, G7)
     s = suffix.lower()
     if s in ['', 'maj', 'major']: chord_type = 'Maj'
     elif any(x in s for x in ['m', 'min']): chord_type = 'min'
@@ -45,52 +45,52 @@ def parse_simplified_chord(chord_label: str):
     
     return root_name, chord_type
 
-# C. 伴奏织体模板 (Accompaniment Pattern Templates)
-# 结构：(时间偏移 QL, 和弦音索引, 时长 QL)
-# 和弦音索引: 0=根音, 1=三度音, 2=五度音, 3=七度音...
+# C. Accompaniment Pattern Templates
+# Structure: (Time Offset QL, Chord Tone Index, Duration QL)
+# Chord Tone Index: 0 = Root, 1 = Third, 2 = Fifth, 3 = Seventh...
 PATTERN_TEMPLATES: Dict[str, List[Tuple[float, int, float]]] = {
-    # 风格 1: 流行民谣 (Pop Ballad) - 根音+琶音分解，4/4 拍
+    # Style 1: Pop Ballad - Root note + arpeggio, 4/4 time signature
     "Pop Ballad": [
-        (0.0, 0, 1.0), # 1 拍：根音 (Bass)
-        (1.0, 1, 0.5), # 2 拍开始：三音
-        (1.5, 2, 0.5), # 2 拍半：五音
-        (2.0, 3, 0.5), # 3 拍开始：七音 (或重复根音)
-        (2.5, 2, 0.5), # 3 拍半：五音
-        (3.0, 1, 1.0), # 4 拍：三音
+        (0.0, 0, 1.0), # 1 Beat: Root note (Bass)
+        (1.0, 1, 0.5), # 2 Begin with the beat: three notes
+        (1.5, 2, 0.5), # 2 Half a beat: Five notes
+        (2.0, 3, 0.5), # 3 Begin with the seventh note (or repeat the root note).
+        (2.5, 2, 0.5), # 3 Half a beat: Five notes
+        (3.0, 1, 1.0), # 4 Beat: Three notes
     ],
     
-    # 风格 2: 华尔兹 (Waltz) - 根音+和弦音，3/4 拍
+    # Style 2: Waltz - Root note + chord tone, 3/4 time signature
     "Waltz": [
-        (0.0, 0, 1.0), # 1 拍：根音 (Bass)
-        (1.0, 1, 1.0), # 2 拍：三音 (通常是和弦音，可以重复)
-        (2.0, 2, 1.0), # 3 拍：五音 (通常是和弦音)
+        (0.0, 0, 1.0), # 1 beat: Root note (Bass)
+        (1.0, 1, 1.0), # 2 Beat: Third note (usually a chord tone, which can be repeated)
+        (2.0, 2, 1.0), # 3 beats: pentatonic scale (usually chord tones)
     ],
     
-    # 风格 3: 稀疏琶音 (Sparse Arpeggio) - 密度高时的默认选项，4/4 拍
-    # 琶音间隔较长，音符较少，避免与旋律冲突
+    # Style 3: Sparse Arpeggio - The default option for high-density arpeggios, 4/4 time signature
+    # Longer arpeggio intervals and fewer notes to avoid conflict with the melody.
     "Sparse_Arpeggio": [
-        (0.0, 0, 1.0), # 1 拍：根音
-        (2.0, 1, 0.5), # 3 拍：三音
-        (2.5, 2, 0.5), # 3 拍半：五音
-        (3.5, 3, 0.5), # 4 拍半：七音
+        (0.0, 0, 1.0), # 1 beat: root note
+        (2.0, 1, 0.5), # 3 beats: three notes
+        (2.5, 2, 0.5), # 3.5 beats: Five notes
+        (3.5, 3, 0.5), # 4.5 beats: Seven notes
     ],
     
     "March": [
-        (0.0, 0, 0.5),  # 1 拍：根音 (强拍)
-        (0.5, 1, 0.5),  # 弱拍：和弦音
-        (1.0, 2, 0.5),  # 2 拍：五音 (强拍)
-        (1.5, 1, 0.5),  # 弱拍：和弦音
-        (2.0, 0, 0.5),  # 3 拍：根音 (强拍)
-        (2.5, 1, 0.5),  # 弱拍：和弦音
-        (3.0, 2, 0.5),  # 4 拍：五音 (强拍)
-        (3.5, 1, 0.5),  # 弱拍：和弦音
+        (0.0, 0, 0.5),  # 1 beat: Root note (strong beat)
+        (0.5, 1, 0.5), # Weak beat: Chord tone
+        (1.0, 2, 0.5), # 2 beat: Fifth (Strong beat)
+        (1.5, 1, 0.5), # Weak beat: Chord tone
+        (2.0, 0, 0.5), # 3 beat: Root (Strong beat)
+        (2.5, 1, 0.5), # Weak beat: Chord tone
+        (3.0, 2, 0.5), # 4 beat: Fifth (Strong beat)
+        (3.5, 1, 0.5), # Weak beat: Chord tone
     ],
     
     "Jazz Swing": [
-        (0.0, 0, 0.75), # 1 拍：根音 (长)
-        (1.0, 1, 0.25), # 2 拍：三音 (短) - Swing 节奏
-        (1.5, 2, 0.75), # 2 拍半：五音 (长)
-        (2.5, 3, 0.25), # 3 拍半：七音 (短)
-        (3.0, 2, 1.0),  # 4 拍：五音 (长)
+        (0.0, 0, 0.75), #1 beat: Root note (long)
+        (1.0, 1, 0.25), #2 beat: Third note (short) - Swing rhythm
+        (1.5, 2, 0.75), #2.5 beat: Fifth note (long)
+        (2.5, 3, 0.25), #3.5 beat: Seventh note (short)
+        (3.0, 2, 1.0), #4 beat: Fifth note (long)
     ]
 }

@@ -8,7 +8,7 @@ import os
 import time
 import sys
 
-# 挂载根目录
+# Mount root directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
@@ -21,35 +21,35 @@ from src.ChordGenerator_A import utils
 from src.ChordGenerator_A.model import Encoder, Decoder, Seq2Seq
 from src.ChordGenerator_A.dataset import MusicDataset, collate_fn
 
-# ================= 工具函数 =================
+# ================= Utility Functions =================
 
-# ✅ [V3.6 新增] 准确率计算函数
+# [V3.6 New] Accuracy calculation function
 def calculate_accuracy(output, trg):
     """
-    计算准确率 (忽略 Padding 和 BAR)
+    Calculate accuracy (ignoring Padding and BAR)
     output: [batch_size * seq_len, output_dim]
     trg:    [batch_size * seq_len]
     """
-    # 获取预测的最大概率索引
+    # Get indices of maximum probability predictions
     preds = output.argmax(dim=1, keepdim=True) 
     
-    # trg 必须和 preds 形状一致
+    # trg must have the same shape as preds
     correct = preds.eq(trg.view_as(preds))
     
-    # 忽略 PAD (0) 和 BAR (假设BAR不计入准确率，或者计入均可)
-    # 我们这里只忽略 PAD
+    # Ignore PAD (0) and BAR (Assuming BAR is either not counted or specifically handled)
+    # Here we only ignore PAD
     non_pad_mask = trg.ne(config.PAD_IDX)
     
-    # 最终计算
+    # Final calculation
     correct_non_pad = correct.squeeze(1) & non_pad_mask
     acc = correct_non_pad.sum().float() / non_pad_mask.sum().float()
     
     return acc
 
-# ✅ [V3.4] 调度函数放回此处，确保独立运行
+# [V3.4] Scheduler function placed here to ensure independent operation
 def get_current_tf_ratio(epoch):
     """
-    计算当前 Epoch 的 Teacher Forcing Ratio
+    Calculate the Teacher Forcing Ratio for the current Epoch
     """
     if epoch < config.TF_DECAY_EPOCHS:
         decay_step = (
@@ -67,7 +67,7 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
-    print(f"🔒 [System] Seed locked: {seed}")
+    print(f"[System] Seed locked: {seed}")
 
 
 def init_weights(m):
@@ -80,22 +80,22 @@ def init_weights(m):
 
 def train(model, iterator, optimizer, criterion, clip, device, tf_ratio):
     """
-    V3.1 训练循环: 必须处理 pos (位置编码)
+    V3.1 Training Loop: Must handle pos (positional encoding)
     """
     model.train()
     epoch_loss = 0
-    epoch_acc = 0 # ✅ V3.6 新增
+    epoch_acc = 0 # V3.6 New
 
     # Unpack 4 items: src, pos, trg, lengths
     for i, (src, pos, trg, lengths) in enumerate(iterator):
         src = src.to(device)
-        pos = pos.to(device)  # ✅ [V3.1] 位置数据上微
+        pos = pos.to(device)  # [V3.1] Positional data to device
         trg = trg.to(device)
 
         optimizer.zero_grad()
 
-        # ✅ [V3.1] 传入 pos
-        # ✅ 将 tf_ratio 传给 model.forward
+        # [V3.1] Pass pos
+        # Pass tf_ratio to model.forward
         output = model(src, pos, trg, lengths, teacher_forcing_ratio=tf_ratio)
 
         output_dim = output.shape[-1]
@@ -104,23 +104,23 @@ def train(model, iterator, optimizer, criterion, clip, device, tf_ratio):
 
         loss = criterion(output, trg)
         loss.backward()
-        # ✅ [V3.6] 计算准确率
+        # [V3.6] Calculate accuracy
         acc = calculate_accuracy(output, trg)
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
         epoch_loss += loss.item()
-        epoch_acc += acc.item() # [V3.6] ✅ 累加
+        epoch_acc += acc.item() # [V3.6] Accumulate
 
-    return epoch_loss / len(iterator), epoch_acc / len(iterator)  # [V3.6] ✅ 返回平均准确率
+    return epoch_loss / len(iterator), epoch_acc / len(iterator)  # [V3.6] Return average accuracy
 
 
 def evaluate(model, iterator, criterion, device):
     """
-    V3.6 验证循环 (修复返回值)
+    V3.6 Validation Loop (Fixed return values)
     """
     model.eval()
     epoch_loss = 0
-    epoch_acc = 0 # ✅ V3.6 新增
+    epoch_acc = 0 # V3.6 New
 
     with torch.no_grad():
         for i, (src, pos, trg, lengths) in enumerate(iterator):
@@ -135,29 +135,29 @@ def evaluate(model, iterator, criterion, device):
             trg = trg[:, 1:].reshape(-1)
 
             loss = criterion(output, trg)
-            acc = calculate_accuracy(output, trg) # ✅ 计算
+            acc = calculate_accuracy(output, trg) # Calculate
             
             epoch_loss += loss.item()
-            epoch_acc += acc.item() # ✅ 累加
+            epoch_acc += acc.item() # Accumulate
 
-    # 🚨 [关键修复] 必须返回两个值，匹配主程序的解包
+    # [Key Fix] Must return two values to match main program unpacking
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
 
 # ==========================================
-# 3. 主程序
+# 3. Main Program
 # ==========================================
 if __name__ == "__main__":
-    # --- A. 初始化 ---
+    # --- A. Initialization ---
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    print(f"🚀 [Device] Using: {device}")
+    print(f"[Device] Using: {device}")
     set_seed(config.SEED)
 
-    # --- B. 打印配置 ---
+    # --- B. Print Configuration ---
     print("\n" + "=" * 50)
-    print("🔧 V3.5 Configuration Summary")
+    print("V3.5 Configuration Summary")
     print("=" * 50)
     print(f"   • Hidden Dim     : {config.HIDDEN_DIM} (Should be 256 for V3.5)")
     print(f"   • Dropout        : {config.DROPOUT}")
@@ -169,8 +169,8 @@ if __name__ == "__main__":
     )
     print("=" * 50 + "\n")
 
-    # --- C. 加载数据 ---
-    print("📦 [Data] Loading Vocab...")
+    # --- C. Load Data ---
+    print("[Data] Loading Vocab...")
     vocab = utils.load_vocab(config.VOCAB_PATH)
     harmony_stoi = vocab["harmony"]
     INPUT_DIM = len(vocab["melody"])
@@ -179,14 +179,14 @@ if __name__ == "__main__":
     POS_EMB_DIM = config.POS_EMB_DIM
 
     if not os.path.exists(config.TRAIN_DATASET_PATH):
-        print(f"❌ 找不到数据文件，请先运行 tokenize_data.py")
+        print(f"Data file not found, please run tokenize_data.py first")
         sys.exit(1)
 
-    # V3.3+ 开启增强 V3.6 训练时关闭增强
+    # V3.3+ Enable augmentation; V3.6 Disable augmentation during training
     train_dataset = MusicDataset(config.TRAIN_DATASET_PATH, augment=False)
     val_dataset = MusicDataset(config.VAL_DATASET_PATH, augment=False)
 
-    print(f"📊 数据加载完成:")
+    print(f"Data loading complete:")
     print(f"   - Train: {len(train_dataset)} (Noise Off)")
     print(f"   - Val:   {len(val_dataset)} (Clean)")
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         val_dataset, batch_size=config.BATCH_SIZE, collate_fn=collate_fn, shuffle=False
     )
 
-    # --- D. 初始化模型 ---
+    # --- D. Initialize Model ---
     enc = Encoder(
         INPUT_DIM,
         config.ENC_EMB_DIM,
@@ -210,25 +210,25 @@ if __name__ == "__main__":
     model = Seq2Seq(enc, dec, device).to(device)
     model.apply(init_weights)
 
-    # --- E. 加载策略 ---
+    # --- E. Loading Strategy ---
     if config.RESUME_TRAINING:
         if os.path.exists(config.MODEL_SAVE_PATH):
-            print(f"🔄 [Resume] Loading: {config.MODEL_SAVE_PATH}")
+            print(f"[Resume] Loading: {config.MODEL_SAVE_PATH}")
             try:
                 state_dict = torch.load(
                     config.MODEL_SAVE_PATH, map_location=device, weights_only=True
                 )
                 model.load_state_dict(state_dict)
-                print("✅ Weights loaded.")
+                print("Weights loaded.")
             except Exception as e:
-                print(f"⚠️ Load failed ({e}). Starting fresh.")
+                print(f"Load failed ({e}). Starting fresh.")
         else:
-            print(f"✨ [Resume] No file found. Starting fresh.")
+            print(f"[Resume] No file found. Starting fresh.")
     else:
-        print("🆕 [Fresh] Config forces fresh start.")
+        print("[Fresh] Config forces fresh start.")
 
-    # --- F. 优化器 ---
-    print(f"🔧 Optimizer: AdamW (Weight Decay: {config.WEIGHT_DECAY})")
+    # --- F. Optimizer ---
+    print(f"Optimizer: AdamW (Weight Decay: {config.WEIGHT_DECAY})")
     optimizer = optim.Adam(
         model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY
     )
@@ -245,11 +245,11 @@ if __name__ == "__main__":
         ignore_index=0, weight=loss_weights, label_smoothing=config.LABEL_SMOOTHING
     )
 
-    # --- G. 训练循环 ---
-    # 获取起始轮次 (默认0)
+    # --- G. Training Loop ---
+    # Get starting epoch (default 0)
     start_epoch = getattr(config, "START_EPOCH", 0)
 
-    print(f"\n🔥 Training Start (Epoch {start_epoch + 1} -> {config.N_EPOCHS})")
+    print(f"\nTraining Start (Epoch {start_epoch + 1} -> {config.N_EPOCHS})")
     print("-" * 115)
     print(
         f"{'Epoch':<6} | {'Time':<10} | {'Train Loss':<12} | {'Val Loss':<12} | {'TF Ratio':<10} | {'Status'}"
@@ -258,7 +258,7 @@ if __name__ == "__main__":
 
     best_valid_loss = float("inf")
 
-    # Checkpoint 目录 (自动包含版本号或时间戳是个好习惯，这里沿用您的路径)
+    # Checkpoint directory (it is good practice to include version numbers or timestamps; here using your path)
     checkpoint_dir = os.path.join(config.MODEL_DIR, "checkpoints/V3.6")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -266,10 +266,10 @@ if __name__ == "__main__":
         for epoch in range(start_epoch, config.N_EPOCHS):
             start_time = time.time()
 
-            # 1. 计算 Ratio
+            # 1. Calculate Ratio
             current_tf_ratio = get_current_tf_ratio(epoch)
 
-            # 2. 训练
+            # 2. Train
             train_loss, train_acc = train(
                 model,
                 train_loader,
@@ -280,7 +280,7 @@ if __name__ == "__main__":
                 tf_ratio=current_tf_ratio,
             )
 
-            # 3. 验证
+            # 3. Evaluate
             valid_loss, valid_acc = evaluate(model, val_loader, criterion, device)
 
             end_time = time.time()
@@ -288,22 +288,22 @@ if __name__ == "__main__":
 
             status_msg = []
 
-            # 保存 Best Model
+            # Save Best Model
             if valid_loss < best_valid_loss:
                 best_valid_loss = valid_loss
                 os.makedirs(os.path.dirname(config.MODEL_SAVE_PATH), exist_ok=True)
                 torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
                 status_msg.append("🏆 Best!")
 
-            # 保存 Checkpoint
+            # Save Checkpoint
             if (epoch + 1) % 1 == 0 or (epoch + 1) == config.N_EPOCHS:
                 cp_name = f"epoch_{epoch + 1:03d}_loss_{valid_loss:.4f}.pth"
                 cp_path = os.path.join(checkpoint_dir, cp_name)
                 torch.save(model.state_dict(), cp_path)
                 status_msg.append(f"💾 Saved")
 
-            # ✅ [优化] 打印格式包含准确率
-            # 格式: Train Loss (Acc) | Val Loss (Acc)
+            # [Optimization] Print format including accuracy
+            # Format: Train Loss (Acc) | Val Loss (Acc)
             print(
                 f"{epoch + 1:<6} | {int(epoch_mins)}m {int(epoch_secs)}s    | "
                 f"{train_loss:.4f} ({train_acc:.2%}) | "

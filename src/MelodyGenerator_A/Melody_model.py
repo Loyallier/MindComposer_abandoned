@@ -5,7 +5,7 @@ import math
 
 class LayerNorm(nn.Module):
     """
-    为了更好的训练稳定性，使用 LayerNorm 而非 RMSNorm (对于小型模型更稳健)
+    For better training stability, LayerNorm is used instead of RMSNorm (more robust for smaller models)
     """
     def __init__(self, ndim, bias):
         super().__init__()
@@ -94,7 +94,7 @@ class Block(nn.Module):
 
 class GPTConfig:
     """
-    配置容器，用于传递参数
+    Configuration container for passing parameters
     """
     def __init__(self, vocab_size, block_size=256, n_layer=6, n_head=6, n_embd=384, dropout=0.0, bias=True):
         self.vocab_size = vocab_size
@@ -120,21 +120,21 @@ class MelodyGPT(nn.Module):
             ln_f = LayerNorm(config.n_embd, bias=config.bias),
         ))
         
-        # 输出层：映射回词表大小
+        # Output layer: mapping back to vocabulary size
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         
-        # 权重共享 (Weight Tying): https://paperswithcode.com/method/weight-tying
-        # 这能显著改善小型模型的表现
+        # Weight Tying: https://paperswithcode.com/method/weight-tying
+        # This significantly improves performance for smaller models
         self.transformer.wte.weight = self.lm_head.weight
 
-        # 初始化权重
+        # Initialize weights
         self.apply(self._init_weights)
-        # 对残差投影层进行特殊的初始化缩放 (GPT-2 paper recommendation)
+        # Special initialization scaling for residual projection layers (GPT-2 paper recommendation)
         for pn, p in self.named_parameters():
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
 
-        # 打印模型参数量
+        # Print model parameter count
         n_params = sum(p.numel() for p in self.parameters())
         print(f"[Model] Initialized MelodyGPT. Parameters: {n_params/1e6:.2f}M")
 
@@ -152,7 +152,7 @@ class MelodyGPT(nn.Module):
         
         assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
         
-        # 1. 位置编码 (0, 1, 2, ..., t-1)
+        # 1. Positional Encoding (0, 1, 2, ..., t-1)
         pos = torch.arange(0, t, dtype=torch.long, device=device) # shape (t)
 
         # 2. Token Embed + Positional Embed
@@ -169,13 +169,13 @@ class MelodyGPT(nn.Module):
 
         # 5. Output Prediction
         if targets is not None:
-            # 训练模式：计算 Loss
+            # Training mode: Calculate Loss
             logits = self.lm_head(x)
             # Flatten for CrossEntropy: (B*T, Vocab_Size) vs (B*T)
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
         else:
-            # 推理模式：仅输出 Logits，保留最后一步 (用于生成)
-            # 这里的优化是：生成时往往只需要最后一个时间步的预测
+            # Inference mode: Output Logits only, keeping the last step (used for generation)
+            # Optimization: Typically only the prediction of the last time step is needed during generation
             logits = self.lm_head(x[:, [-1], :]) # (B, 1, Vocab_Size)
             loss = None
 
@@ -184,30 +184,30 @@ class MelodyGPT(nn.Module):
     @torch.no_grad()
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
         """
-        生成函数
-        idx: (B, T) 初始上下文 (Prompt)
+        Generation function
+        idx: (B, T) initial context (Prompt)
         """
         for _ in range(max_new_tokens):
-            # 如果序列长度超过 block_size，需要裁剪 (Rolling Window)
+            # If sequence length exceeds block_size, truncation is required (Rolling Window)
             idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:, -self.config.block_size:]
             
-            # 前向传播
+            # Forward pass
             logits, _ = self(idx_cond)
-            # 取最后一个时间步
+            # Take the last time step
             logits = logits[:, -1, :] / temperature
             
-            # Top-K 采样过滤
+            # Top-K sampling filter
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
             
-            # 概率分布
+            # Probability distribution
             probs = F.softmax(logits, dim=-1)
             
-            # 采样
+            # Sampling
             idx_next = torch.multinomial(probs, num_samples=1)
             
-            # 拼接
+            # Concatenation
             idx = torch.cat((idx, idx_next), dim=1)
             
         return idx

@@ -6,17 +6,17 @@ import random
 class Encoder(nn.Module):
     def __init__(self, input_dim, emb_dim, hidden_dim, dropout, pos_dim, pos_emb_dim):
         """
-        [V3.1] 新增 pos_dim (位置词表大小) 和 pos_emb_dim (位置向量维度)
+        [V3.1] Added pos_dim (positional vocabulary size) and pos_emb_dim (positional vector dimension)
         """
         super().__init__()
-        # 1. 旋律嵌入
+        # 1. Melody Embedding
         self.embedding = nn.Embedding(input_dim, emb_dim)
         
-        # 2. [V3.1] 位置嵌入
+        # 2. [V3.1] Positional Embedding
         self.pos_embedding = nn.Embedding(pos_dim, pos_emb_dim)
         
-        # 3. 双向 LSTM
-        # 输入维度 = 旋律向量 + 位置向量
+        # 3. Bidirectional LSTM
+        # Input dimension = Melody vector + Positional vector
         total_input_dim = emb_dim + pos_emb_dim
         self.rnn = nn.LSTM(total_input_dim, hidden_dim, bidirectional=True, batch_first=True)
         
@@ -26,11 +26,11 @@ class Encoder(nn.Module):
         # src: [batch, seq_len]
         # pos: [batch, seq_len]
         
-        # 1. 获取两个嵌入
+        # 1. Get both embeddings
         embedded_src = self.dropout(self.embedding(src))  # [batch, seq, emb_dim]
         embedded_pos = self.dropout(self.pos_embedding(pos)) # [batch, seq, pos_emb_dim]
         
-        # 2. 拼接 (Concatenate) -> [batch, seq, emb_dim + pos_emb_dim]
+        # 2. Concatenate -> [batch, seq, emb_dim + pos_emb_dim]
         combined_input = torch.cat((embedded_src, embedded_pos), dim=2)
         
         # 3. Pack Sequence
@@ -48,7 +48,7 @@ class Encoder(nn.Module):
 class Attention(nn.Module):
     def __init__(self, hidden_dim):
         super().__init__()
-        # Encoder双向(hidden*2) + Decoder单向(hidden*2)
+        # Encoder bidirectional (hidden*2) + Decoder unidirectional (hidden*2)
         self.attn = nn.Linear((hidden_dim * 2) + (hidden_dim * 2), hidden_dim)
         self.v = nn.Linear(hidden_dim, 1, bias=False)
 
@@ -57,7 +57,7 @@ class Attention(nn.Module):
         # encoder_outputs: [batch, src_len, hidden_dim*2]
         src_len = encoder_outputs.shape[1]
         
-        hidden = hidden.repeat(src_len, 1, 1).permute(1, 0, 2) 
+        hidden = hidden.repeat(src_len, 1, 1).permute(1, 0, 2)
         
         energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim=2)))
         attention = self.v(energy).squeeze(2)
@@ -89,7 +89,7 @@ class Decoder(nn.Module):
         prediction = self.fc_out(torch.cat((output, weighted, embedded), dim=2))
         prediction = prediction.squeeze(1)
         
-        return prediction, hidden, cell
+        return prediction, hidden, cell, a.squeeze(1)
 
 class Seq2Seq(nn.Module):
     def __init__(self, encoder, decoder, device):
@@ -99,27 +99,27 @@ class Seq2Seq(nn.Module):
         self.device = device
         
     def forward(self, src, pos, trg, src_len, teacher_forcing_ratio=0.5):
-        # [V3.1] 增加 pos 参数
+        # [V3.1] Added pos parameter
         batch_size = src.shape[0]
         trg_len = trg.shape[1]
         trg_vocab_size = self.decoder.output_dim
         
         outputs = torch.zeros(batch_size, trg_len, trg_vocab_size).to(self.device)
         
-        # Encoder 传入 pos
+        # Pass pos to Encoder
         encoder_outputs, hidden, cell = self.encoder(src, pos, src_len)
         
-        # 处理 hidden/cell (双向 -> 单向拼接)
+        # Handle hidden/cell (Bidirectional -> Unidirectional concatenation)
         hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim=1).unsqueeze(0)
         cell = torch.cat((cell[-2,:,:], cell[-1,:,:]), dim=1).unsqueeze(0)
         
         input_step = trg[:, 0]
         
         for t in range(1, trg_len):
-            output, hidden, cell = self.decoder(input_step, hidden, cell, encoder_outputs)
+            output, hidden, cell, _ = self.decoder(input_step, hidden, cell, encoder_outputs)
             outputs[:, t, :] = output
             
-            top1 = output.argmax(1) 
+            top1 = output.argmax(1)
             use_teacher_forcing = random.random() < teacher_forcing_ratio
             input_step = trg[:, t] if use_teacher_forcing else top1
             

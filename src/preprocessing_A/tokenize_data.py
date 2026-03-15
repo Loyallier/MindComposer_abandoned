@@ -5,7 +5,7 @@ from collections import Counter
 import re
 import random
 
-# ================= 1. 环境 =================
+# ================= 1. environment =================
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(current_dir)
 project_root = os.path.dirname(src_dir)
@@ -15,10 +15,10 @@ try:
     from src import path
     from src.ChordGenerator_A import config
 except ImportError as e:
-    print(f"❌ 导入失败: {e}")
+    print(f"❌ Import failed: {e}")
     sys.exit(1)
 
-# ================= 2. 配置 (V3.2) =================
+# ================= 2. Configuration (V3.2) =================
 INPUT_FILE = os.path.join(path.DATA_INTERIM_DIR, "training_data_cleaned.txt")
 OUTPUT_VOCAB = path.VOCAB_PATH
 OUTPUT_TRAIN_DATA = path.DATA_PROCESSED_DIR / "train_data.json"
@@ -38,7 +38,7 @@ RESERVED_TOKENS = [
     "_", config.BAR_TOKEN, "0",
 ]
 
-# ================= 3. 工具 =================
+# ================= 3. tool =================
 
 def normalize_chord(token):
     if token in RESERVED_TOKENS or token == "0" or token == "_": return token
@@ -96,7 +96,7 @@ def build_vocab(sequences, vocab_name, min_freq=1, is_harmony=False):
         curr_id += 1
     return token_to_id
 
-# ✅ [修正] 专门的 Input 编码器 (带位置)
+# ✅ [Correction] Dedicated Input Encoder (with Position)
 def encode_input(seq, pos_seq, vocab):
     sos_id = vocab[config.SOS_TOKEN]
     eos_id = vocab[config.EOS_TOKEN]
@@ -105,7 +105,6 @@ def encode_input(seq, pos_seq, vocab):
     encoded_ids = [sos_id]
     encoded_pos = [BAR_POS_IDX] # SOS -> 31
     
-    # 正常 zip 遍历
     for token, pos in zip(seq, pos_seq):
         encoded_ids.append(vocab.get(token, unk_id))
         encoded_pos.append(pos)
@@ -115,7 +114,7 @@ def encode_input(seq, pos_seq, vocab):
     
     return encoded_ids, encoded_pos
 
-# ✅ [修正] 专门的 Target 编码器 (不带位置，修复 Zip 空列表问题)
+# ✅ [Fixed] Dedicated Target Encoder (without location, fixes Zip empty list issue)
 def encode_target(seq, vocab):
     sos_id = vocab[config.SOS_TOKEN]
     eos_id = vocab[config.EOS_TOKEN]
@@ -169,7 +168,7 @@ def process_dataset(song_lines, melody_vocab, harmony_vocab, start_id=0):
                 flat_pos.extend(mp + [BAR_POS_IDX]) 
                 flat_trg.extend(hb + [config.BAR_TOKEN])
             
-            # 编码 (分别调用修复后的函数)
+            # Encoding (calling the repaired functions respectively)
             enc_inp, enc_pos = encode_input(flat_inp, flat_pos, melody_vocab)
             enc_trg = encode_target(flat_trg, harmony_vocab) # ✅ Fix
             
@@ -199,25 +198,24 @@ def process_dataset(song_lines, melody_vocab, harmony_vocab, start_id=0):
 
     return encoded_data, slice_count, skipped_count
 
-# ================= 4. 主程序 =================
+# ================= 4. Main program =================
 
 def main():
-    # 确保目录存在
     os.makedirs(os.path.dirname(OUTPUT_VOCAB), exist_ok=True)
     os.makedirs(os.path.dirname(OUTPUT_TRAIN_DATA), exist_ok=True)
 
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ 找不到: {INPUT_FILE}")
+        print(f"❌ Cannot find: {INPUT_FILE}")
         return
 
-    print(f"🔒 [V3.2 Fixed] 正在修复数据编码 (Zip Bug Fix)...")
+    print(f"🔒 [V3.2 Fixed] Data encoding is being fixed. (Zip Bug Fix)...")
     
     with open(INPUT_FILE, "r", encoding="utf-8") as f:
         all_lines = [line for line in f if "|" in line]
     
-    print(f"📦 原始歌曲: {len(all_lines)}")
+    print(f"📦 Original song: {len(all_lines)}")
 
-    print("📖 构建词表...")
+    print("📖 Building a vocabulary...")
     temp_m, temp_h = [], []
     for line in all_lines:
         p = line.strip().split(" | ")
@@ -236,7 +234,7 @@ def main():
     val_lines = all_lines[:val_idx]
     train_lines = all_lines[val_idx:]
     
-    print(f"📊 训练集: {len(train_lines)} | 验证集: {len(val_lines)}")
+    print(f"📊 training set: {len(train_lines)} | training set: {len(val_lines)}")
 
     train_data, c1, s1 = process_dataset(train_lines, mv, hv, 0)
     val_data, c2, s2 = process_dataset(val_lines, mv, hv, c1)
@@ -246,10 +244,10 @@ def main():
     with open(OUTPUT_VAL_DATA, "w", encoding="utf-8") as f:
         json.dump(val_data, f)
 
-    print(f"\n🚀 完成:")
+    print(f"\n🚀 Finish:")
     print(f"   - Train Slices: {len(train_data)}")
     print(f"   - Val Slices:   {len(val_data)}")
-    print(f"   - 请重新运行 check_data_integrity.py 确认 Target 不再只是 [1, 2]")
+    print(f"   - Please rerun check_data_integrity.py to confirm that the Target is no longer just... [1, 2]")
 
 if __name__ == "__main__":
     main()
